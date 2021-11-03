@@ -55,13 +55,17 @@
     # R2jags (Bayesian models interface with JAGS)
     # lme4 (linear mixed models - for checking overall patterns)
     # MuMIn (dredging for AIC and marginal/conditional r2 values for mixed models)
-
+  # visualization
+    # ggplot2
+    # patchwork (multipanel figs)
+    # rasterVis (spatial figs)
+  
 ## raw inputs and data sources
   # sensor readings
     # folder of raw data in sensordata_path
     # metadata (location history) in sensormetadata_path
     # calibration parameters in sensormetadata_path
-    # records of sensor failures in sensormetadat_path
+    # records of sensor failures in sensormetadata_path
   # precipitation and VPD data from PRISM
     # daily max VPD in gis_path/PRISM/MAX_VPD/[year]/
       # 2021 is split - 2021s is stable data and 2021p is provisional (more recent)
