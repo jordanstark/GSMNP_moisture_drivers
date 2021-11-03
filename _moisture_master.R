@@ -214,6 +214,6 @@
 ## sensor deployment description
   source(paste0(script_path,"Fig_sensordeployments.R"),local=T)
   
-## effects of topography on moisutre
+## effects of topography on moisture
   source(paste0(script_path,"fig_topomodels.R"),local=T)
   
