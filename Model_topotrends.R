@@ -6,6 +6,8 @@
     library(lubridate)
     library(lme4)
     library(MuMIn)
+    library(lmerTest)
+    library(car)
 
   ## logit functions
     logit <- function(x) log(x/(1-x))
@@ -70,6 +72,8 @@
   fullmod <- lmer(logit_vmc ~ elev + log_tci + slope + tpi + prec + vpd + rad + meant + maxEVI + (1|SiteID), 
                    scaledat)
   r.squaredGLMM(fullmod)
+  
+  vif(fullmod)
     
   # save data and model for figures
   save(fullmod,file=paste0(model_out_path,"summer_drivers_lmer.RData"))
@@ -140,6 +144,7 @@
     deepmod <- lmer(logit_vmc ~ (cos(doy*0.0172)+sin(doy*0.0172))*(elev + slope) + (1|SiteID),moddat)
     r.squaredGLMM(deepmod)
     summary(deepmod)
+    vif(deepmod)
     
     save(deepmod,file=paste0(model_out_path,"topo_over_time.RData"))
     
