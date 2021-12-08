@@ -13,6 +13,11 @@ SensorData <- read.csv(paste0(intermediate_path,"model_data.csv"))
 SensorData$date <- as_date(SensorData$date)
 SensorData <- SensorData[-which(is.na(SensorData$SensorID)),]
 
+#remove duplicates - not sure why some are duplicated in these columns
+SensorData <- SensorData[,!names(SensorData) %in% c("delsurf","deldeep","fracdem_deep","fracdem_surf")]
+SensorData <- unique(SensorData)
+
+
 SensorData_long <- pivot_longer(SensorData,c("vmc_Deep","vmc_Surf","soiltemp"),
                                 names_to="sensortype",
                                 values_to="value")
@@ -34,7 +39,7 @@ SensorLength <- aggregate(value ~ sensortype + SiteID,SensorData_long,length,na.
 SensorLength <- pivot_wider(SensorLength,names_from=sensortype,values_from=value)
 
 SiteData <- SensorData[,c("SiteID","elev","log_tci","strdist","totrad","slope","tpi","maxEVI")]
-SiteData <- SiteData[-which(is.na(SiteData$elev)),]
+#SiteData <- SiteData[-which(is.na(SiteData$elev)),]
 SiteData <- unique(SiteData)
 
 SensorLength <- merge(SensorLength,SiteData)
@@ -92,6 +97,7 @@ e.rad <- ggplot(parksample@data, aes(x=elev,y=totrad)) +
 # figure version for presentation
 (e.tci | e.rad) + plot_layout(guides="collect") & theme(text=element_text(size=20),legend.position="bottom")
 
+
 #### coverage of deployed dates ####
 sensordata <- read.csv(paste0(intermediate_path,"cleaned_sensordata.csv"))
 sensordata$Deploy_Date <- ymd(sensordata$Deploy_Date)
@@ -106,9 +112,22 @@ sensordays <- sensordays[-which(is.na(sensordays$Remove_Date)),] #take out senso
 
 sensordays$max_ndays <- as.numeric(sensordays$Remove_Date - sensordays$Deploy_Date) -3
   # cleaning script removes 3 days (2 at beginning, 1 at end)
+sensordays$fracdays <- sensordays$days/sensordays$max_ndays
 
 # total fraction of days measured 
 sum(sensordays$days,na.rm=T)/sum(sensordays$max_ndays,na.rm=T)
+
+
+# test for survival differences along gradients
+survtest <- lm(fracdays ~ elev*log_tci*totrad,sensordays)
+
+summary(survtest)
+
+ggplot(sensordays, aes(color=elev)) +
+  geom_histogram(aes(x=fracdays),bins=10) +
+  theme_classic() +
+  labs(x="fraction of days observed",y="number of sensors")
+
 
 #### map of sensor deployments ####
 med_sensordat <- aggregate(cbind(vmc_Surf,vmc_Deep) ~ SiteID + X + Y,
