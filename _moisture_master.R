@@ -54,7 +54,7 @@
   # modelling
     # R2jags (Bayesian models interface with JAGS)
     # lme4 (linear mixed models - for checking overall patterns)
-    # MuMIn (dredging for AIC and marginal/conditional r2 values for mixed models)
+    # MuMIn (marginal/conditional r2 values for mixed models)
   # visualization
     # ggplot2
     # patchwork (multipanel figs)
@@ -83,6 +83,8 @@
       # strdist ("logsd.txt") in gis_path/gsmnp_ascii/
       # 365 daily solar radiation rasters (folder /rad/) in gis_path/gsmnp_ascii/
     # GRSM boundary polygon in gis_path
+    # EVI data in gis_path/Seasonality/
+    
 
 ###########################################################
 ################ process raw sensor data ##################
@@ -208,7 +210,6 @@
   # inputs: 'model_data.csv' in intermediate_path
   # outputs: 'summer_drivers_lmer.RData' in model_path with model for making figs
   #          'scaled_summer_vmc_drivers.csv' with scaled model_data from summer in intermediat_path
-  
   
   
   
