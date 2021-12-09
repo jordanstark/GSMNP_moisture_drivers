@@ -13,9 +13,7 @@ SensorData <- read.csv(paste0(intermediate_path,"model_data.csv"))
 SensorData$date <- as_date(SensorData$date)
 SensorData <- SensorData[-which(is.na(SensorData$SensorID)),]
 
-#remove duplicates - not sure why some are duplicated in these columns
 SensorData <- SensorData[,!names(SensorData) %in% c("delsurf","deldeep","fracdem_deep","fracdem_surf")]
-SensorData <- unique(SensorData)
 
 
 SensorData_long <- pivot_longer(SensorData,c("vmc_Deep","vmc_Surf","soiltemp"),
