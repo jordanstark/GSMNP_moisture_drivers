@@ -284,10 +284,8 @@
 
   ## remove dummy site for extracting AT1.1 radiation   
       alldat <- alldat[alldat$SiteID!="AT1.1rad",]
-      alldat <- alldat[-which(is.na(alldat$SiteID)),]
-      
+
       sitedat <- sitedat[sitedat$SiteID!="AT1.1rad",]
-      sitedat <- sitedat[-which(is.na(sitedat$SiteID)),]
 
       
 #### save all data ####

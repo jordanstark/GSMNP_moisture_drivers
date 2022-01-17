@@ -37,6 +37,7 @@
     
     IDevents <- function(vmc,times,summary=F) {
       df <- data.frame(vmc=vmc,
+                       smooth=as.numeric(stats::filter(vmc,rep(1,24),sides=1)/24),
                        time=times,
                        day=as_date(times),
                        event=NA)
@@ -187,6 +188,7 @@
       
       drain.df <- data.frame(event=1:length(prec.df[,1]),
                              prec_rng=prec.df$rng_vmc,
+                             prec_start=prec.df$start_vmc,
                              starttime=ymd_hms(NA),
                              endtime=ymd_hms(NA),
                              start_vmc=NA,
@@ -288,18 +290,25 @@
      dem.df <- data.frame(starttime=dem_days,
                           start_vmc=NA,
                           endtime=dem_days + days(1),
-                          end_vmc=NA)
+                          end_vmc=NA,
+                          max_smooth24=NA)
 
      for(i in 1:length(dem.df[,1])){
-       dem.df$start_vmc[i] <- df$vmc[which(df$time==dem.df$starttime[i])]
+       startindex <- which(df$time==dem.df$starttime[i])
+       dem.df$start_vmc[i] <- df$vmc[startindex]
+       
        if(dem.df$endtime[i] %in% dem.df$starttime){
          # only get end vmc if demand was still happening
-         dem.df$end_vmc[i] <- df$vmc[which(df$time==dem.df$endtime[i])]
+         endindex <- which(df$time==dem.df$endtime[i])
+         dem.df$end_vmc[i] <- df$vmc[endindex]
+         dem.df$max_smooth24[i] <- max(df$smooth[startindex:endindex] - df$smooth[(startindex-1):(endindex-1)])
+         
        }
      }
 
      dem.df <- dem.df[which(!is.na(dem.df$end_vmc)),]
-
+     dem.df <- dem.df[which(dem.df$max_smooth24 < 0),]
+     
      dem.df$rng_vmc <- dem.df$end_vmc - dem.df$start_vmc
      
      
@@ -344,24 +353,28 @@
       }
 
     # plot a portion of the data as a diagnostic      
-      # ggplot(df[df$time>ymd("2021-02-01") &
-      #             df$time<ymd("2021-05-01"),],
-      #        aes(x=time,y=vmc,color=event,group=NA)) +
-      #   geom_line(size=1) +
-      #   theme_classic()
+      ggplot(df[df$time>ymd("2021-02-01") &
+                  df$time<ymd("2021-05-01"),],
+             aes(x=time,y=vmc,color=event,group=NA)) +
+        geom_line(size=1) +
+        theme_classic()
 
      
       
     #### combine summaries ####
       df$event[which(df$event=="FALSE")] <- NA
+      
+      dem.df$max_smooth24 <- NULL
         
       dem.df$starttime <- as_datetime(dem.df$starttime)
       dem.df$endtime <- as_datetime(dem.df$endtime)
       
       dem.df$prec_rng <- NA
+      dem.df$prec_start <- NA
       prec.df$prec_rng <- NA
-      prec.df$slope <- NA
-      prec.df$r2 <- NA
+      prec.df$prec_start <- NA
+
+      
 
 
       
