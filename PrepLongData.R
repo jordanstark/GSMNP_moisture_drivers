@@ -120,7 +120,7 @@
       prec_long <- ExtractStack(stack(c(list.files(paste0(gis_path,"PRISM/Precip/2019/"),
                                                    pattern="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2020/"),
-                                                   pattesrn="*.bil$",full.names=T),
+                                                   pattern="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2021s/"),
                                                    pattern="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2021p/"),

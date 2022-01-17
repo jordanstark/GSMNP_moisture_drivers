@@ -188,6 +188,7 @@
   
 ## combine datasets and save for models
   jobRunScript(paste0(script_path,"PrepLongData.R"),importEnv=T)
+  # this takes ~ 40 minutes
   # inputs: cleaned sensor data ('cleaned_sensordata.csv' in intermediate_path)
   #         elevation, tci, radiation, totrad, strdist, and aws rasters in gis_path/gsmnp_ascii/
   #         interpolated PRISM vpd data in gis_path/PRISM/daily_vpd
@@ -210,7 +211,21 @@
   # outputs: 'summer_drivers_lmer.RData' in model_path with model for making figs
   #          'scaled_summer_vmc_drivers.csv' with scaled model_data from summer in intermediate_path
   
+###########################################################
+###### summarize and model timeseries characteristics #####
+###########################################################
+  jobRunScript(paste0(script_path,"Summarize_precip_freq_size.R"), importEnv=T)
+  # inputs: weather data ('AndrewsMurphy_weather.csv' and 'NOAA_weather.csv')
+  #         and weather station elevations ('Weather Station Elevations.csv')
+  #         in weather_path
+  # no saved outputs currently, but this contains models of precip frequency and size based on 
+  # weather station data, including figures of predictions
   
+  jobRunScript(paste0(script_path,"Summarize_prec_drain_dem.R"), importEnv=T)
+  # inputs: site and sensor data in intermediate_path: 'cleaned_sensordata.csv' and 'site_met_topo.csv'
+  # outputs: 'all_events.csv' in intermediate_path
+  #           this contains start and end times and vmc values for all ID'd events
+  #           also vmc range and number of hours, and for drainage, vmc range of prior precip
   
 ###########################################################
 ######################### figures #########################
