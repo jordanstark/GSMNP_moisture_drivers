@@ -189,16 +189,15 @@
 ## combine datasets and save for models
   jobRunScript(paste0(script_path,"PrepLongData.R"),importEnv=T)
   # inputs: cleaned sensor data ('cleaned_sensordata.csv' in intermediate_path)
-  #         elevation, tci, radiation, totrad, and strdist rasters in gis_path/gsmnp_ascii/
+  #         elevation, tci, radiation, totrad, strdist, and aws rasters in gis_path/gsmnp_ascii/
   #         interpolated PRISM vpd data in gis_path/PRISM/daily_vpd
   #         PRISM 4km precip data in gis_path/PRISM/Precip
   #         PRISM 4km DEM in gis_path/PRISM/elev
   #         microclimate temperature data in gis/Microclimate/MeanTs
   #         EVI seasonality and peak data in gis/Seasonality/
   # outputs: in intermediate_path
-  #          demand_model_data.csv has daily data when soil moisture was declining for demand model
-  #          demand_fracmodel_data.csv has daily data when soil moisture declined by at least 1% of previous day moisture
   #          model_data.csv has daily data for all days for moisture availability model
+  #          site_met_topo.csv has everything but moisture -- ie daily weather and site characteristics
 
 
   
@@ -209,7 +208,7 @@
   jobRunScript(paste0(script_path,"Model_topotrends.R"),importEnv=T)
   # inputs: 'model_data.csv' in intermediate_path
   # outputs: 'summer_drivers_lmer.RData' in model_path with model for making figs
-  #          'scaled_summer_vmc_drivers.csv' with scaled model_data from summer in intermediat_path
+  #          'scaled_summer_vmc_drivers.csv' with scaled model_data from summer in intermediate_path
   
   
   

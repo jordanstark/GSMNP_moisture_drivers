@@ -25,44 +25,17 @@
       sensordata$date <- as_date(sensordata$timestamp)
       
     # extract only data from midnight
-      daily_midn <- sensordata[hour(sensordata$timestamp)==0,
+      daily_vmc <- sensordata[hour(sensordata$timestamp)==0,
                                c("date","SensorID","SiteID","vmc_Surf","vmc_Deep","soiltemp")]
-      
-    # calculate daily change in vmc
-      daily_midn$delsurf <- NA
-      daily_midn$deldeep <- NA
-      
-      daily_midn <- daily_midn[order(daily_midn$date),]
-      
-      
-      bysite <- split(daily_midn,daily_midn$SiteID)
-      
-      
-      for(j in 1:length(bysite)){
-        # fill in NAs
-        startday <- min(bysite[[j]]$date,na.rm=T)
-        endday <- max(bysite[[j]]$date,na.rm=T)
-        all_days <- data.frame(date=seq(startday,endday,by="1 day"))
-        
-        bysite[[j]] <- merge(bysite[[j]],all_days,all=T)
-        
-        # calc difference from yesterday
-        for(i in 1:(length(bysite[[j]][,1]-1))){
-          bysite[[j]]$delsurf[i] <- bysite[[j]]$vmc_Surf[i+1] - bysite[[j]]$vmc_Surf[i]
-          bysite[[j]]$deldeep[i] <- bysite[[j]]$vmc_Deep[i+1] - bysite[[j]]$vmc_Deep[i]
-          
-        } 
-      }
-      
-      daily_vmc <- do.call(rbind,bysite)
       daily_vmc$doy <- yday(daily_vmc$date)
         # for merging later with rad data
       
-      # make sites spatial
+      
+    # make sites spatial
       sensorsites <- unique(sensordata[,c("SiteID","X","Y","val")])
       row.names(sensorsites) <- NULL
       
-      # add correction to get AT1.1 radiation value (it is 1px outside map edge)
+    # add correction to get AT1.1 radiation value (it is 1px outside map edge)
       sensorsites[length(sensorsites[,1])+1,] <- sensorsites[sensorsites$SiteID=="AT1.1",]
       sensorsites[length(sensorsites[,1]),"SiteID"] <- "AT1.1rad"
       sensorsites[length(sensorsites[,1]),"X"] <- sensorsites[length(sensorsites[,1]),"X"] - 30
@@ -79,49 +52,62 @@
       }
       
   ## landform, radiation, and elevation data
-      # import
-        elev <- raster(paste0(gis_path,"gsmnp_ascii/elev.txt"))
-        tci <- raster(paste0(gis_path,"gsmnp_ascii/tci_cor.asc"))
-        rad <- stack(list.files(paste0(gis_path,"gsmnp_ascii/rad/"),
-                                full.names=T),quick=T)
-        strdist <- raster(paste0(gis_path,"gsmnp_ascii/logsd.txt"))
-        totrad <- raster(paste0(gis_path,"gsmnp_ascii/totrad.txt"))
+    # import
+      elev <- raster(paste0(gis_path,"gsmnp_ascii/elev.txt"))
+      tci <- raster(paste0(gis_path,"gsmnp_ascii/tci_cor.asc"))
+      strdist <- raster(paste0(gis_path,"gsmnp_ascii/logsd.txt"))
+      totrad <- raster(paste0(gis_path,"gsmnp_ascii/totrad.txt"))
       
-      # set coordinate system
-        crs(rad) <- crs(strdist) <- crs(totrad) <- crs(elev) <- crs(tci) <- CRS("+proj=utm +zone=17 +datum=NAD27")
-        
-        log_tci <- log(tci)   
+      rad <- stack(list.files(paste0(gis_path,"gsmnp_ascii/rad/"),
+                              full.names=T),quick=T)
+      names(rad)[names(rad)=="rad073x2"] <- "rad074"
       
-      # calculate slope and TPI
-        slope <- terrain(elev,opt="slope",unit="degrees")
-        tpi <- terrain(elev,opt="tpi")
-        
-      # import PRISM elev and calculat difference from 30m DEM
-        PRISM_elev  <- projectRaster(raster(list.files(paste0(gis_path,"PRISM/Elev/"),
-                                                       pattern="*.bil$",full.names=T)),elev,method="ngb")
-        delta_elev <- elev - PRISM_elev
-          
-      # extract at sites
-        spsites$elev <- raster::extract(elev,spsites)
-        spsites$log_tci <- raster::extract(log_tci,spsites)
-        spsites$strdist <- raster::extract(strdist,spsites)
-        spsites$totrad <- raster::extract(totrad,spsites)
-        spsites$totrad[spsites$SiteID=="AT1.1"] <- spsites$totrad[spsites$SiteID=="AT1.1rad"]
-        spsites$slope <- raster::extract(slope,spsites)
-        spsites$slope[spsites$SiteID=="AT1.1"] <- spsites$slope[spsites$SiteID=="AT1.1rad"]
-        spsites$tpi <- raster::extract(tpi,spsites)
-        spsites$tpi[spsites$SiteID=="AT1.1"] <- spsites$tpi[spsites$SiteID=="AT1.1rad"]
-        spsites$delta.elev <- raster::extract(delta_elev,spsites)
-        
-        rad_long <- ExtractStack(rad,"rad")
-        rad_long$rastername[rad_long$rastername=="rad073x2"] <- "rad074"
-        rad_long$doy <- as.numeric(substring(rad_long$rastername,4))
-        rad_long$rastername <- NULL
-        
-        rad_long$rad[rad_long$SiteID=="AT1.1"] <- rad_long$rad[rad_long$SiteID=="AT1.1rad"]
-        
-        rad_long$rad[rad_long$rad==0] <- NA
-        
+    # set coordinate system
+      crs(rad) <- crs(strdist) <- crs(totrad) <- crs(elev) <- crs(tci) <- CRS("+proj=utm +zone=17 +datum=NAD27")
+      
+      log_tci <- log(tci)   
+      
+    # calculate slope and TPI
+      slope <- terrain(elev,opt="slope",unit="degrees")
+      tpi <- terrain(elev,opt="tpi")
+      
+    # available water storage
+      aws0_50 <- raster(paste0(gis_path,"cat_availablewatersupply0-50cm.asc"))
+      aws0_150 <- raster(paste0(gis_path,"cat_availablewatersupply0-150cm.asc"))
+      
+      crs(aws0_50) <- CRS("+proj=longlat +datum=NAD83")
+      crs(aws0_150) <- CRS("+proj=utm +zone=17 +datum=NAD83")
+      
+    # import PRISM elev and calculate difference from 30m DEM
+      PRISM_elev  <- projectRaster(raster(list.files(paste0(gis_path,"PRISM/Elev/"),
+                                                     pattern="*.bil$",full.names=T)),
+                                   elev,method="ngb")
+      delta_elev <- elev - PRISM_elev
+      
+    # extract at sites
+      spsites$elev <- raster::extract(elev,spsites)
+      spsites$log_tci <- raster::extract(log_tci,spsites)
+      spsites$strdist <- raster::extract(strdist,spsites)
+      spsites$totrad <- raster::extract(totrad,spsites)
+      spsites$totrad[spsites$SiteID=="AT1.1"] <- spsites$totrad[spsites$SiteID=="AT1.1rad"]
+      spsites$slope <- raster::extract(slope,spsites)
+      spsites$slope[spsites$SiteID=="AT1.1"] <- spsites$slope[spsites$SiteID=="AT1.1rad"]
+      spsites$tpi <- raster::extract(tpi,spsites)
+      spsites$tpi[spsites$SiteID=="AT1.1"] <- spsites$tpi[spsites$SiteID=="AT1.1rad"]
+      spsites$delta.elev <- raster::extract(delta_elev,spsites)
+      spsites$aws0_50 <- raster::extract(aws0_50,spsites)
+      spsites$aws0_150 <- raster::extract(aws0_150,spsites)
+      
+      rad_long <- ExtractStack(rad,"rad")
+      rad_long$rastername[rad_long$rastername=="rad073x2"] <- "rad074"
+      rad_long$doy <- as.numeric(substring(rad_long$rastername,4))
+      rad_long$rastername <- NULL
+      
+      rad_long$rad[rad_long$SiteID=="AT1.1"] <- rad_long$rad[rad_long$SiteID=="AT1.1rad"]
+      
+      rad_long$rad[rad_long$rad==0] <- NA
+      
+      
       
 
   ## PRISM VPD (interpolated with elevation)
@@ -134,7 +120,7 @@
       prec_long <- ExtractStack(stack(c(list.files(paste0(gis_path,"PRISM/Precip/2019/"),
                                                    pattern="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2020/"),
-                                                   pattern="*.bil$",full.names=T),
+                                                   pattesrn="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2021s/"),
                                                    pattern="*.bil$",full.names=T),
                                         list.files(paste0(gis_path,"PRISM/Precip/2021p/"),
@@ -271,6 +257,7 @@
         
 #### merge and finalize datasets ####
   ## merge all data
+    # all data with vmc
       alldat <- merge(daily_vmc,
                       merge(spsites@data[,c("SiteID","elev","log_tci","strdist","totrad","slope","tpi","val")],
                             merge(prec_long,
@@ -282,23 +269,29 @@
                                   all=T),
                             all=T),
                       all=T)
+        
+      # everything but vmc
+        sitedat <- merge(allevi_summary,
+                         merge(spsites@data[,c("SiteID","elev","log_tci","strdist","totrad","slope","tpi",
+                                               "delta.elev","aws0_50","aws0_150")],
+                               merge(prec_long,
+                                     merge(vpd_long,
+                                           merge(rad_long,meant,all=T),
+                                           all=T),
+                                     all=T),
+                               all=T),
+                         all=T)
 
   ## remove dummy site for extracting AT1.1 radiation   
       alldat <- alldat[alldat$SiteID!="AT1.1rad",]
-
-      alldat$fracdem_deep <- -alldat$deldeep/alldat$vmc_Deep
-      alldat$fracdem_surf <- -alldat$delsurf/alldat$vmc_Surf
-      
       alldat <- alldat[-which(is.na(alldat$SiteID)),]
-
       
-  ## isolate days when soil moisture was decreasing
-      demand <- alldat[which(alldat$deldeep < -0.001 & alldat$delsurf < -0.001),]
-      demand_frac <- alldat[which(alldat$fracdem_deep > 0.01 &
-                                    alldat$fracdem_surf >0.01),]
+      sitedat <- sitedat[sitedat$SiteID!="AT1.1rad",]
+      sitedat <- sitedat[-which(is.na(sitedat$SiteID)),]
+
       
 #### save all data ####
+  write.csv(sitedat, paste0(intermediate_path,"site_met_topo.csv"),row.names=F)
   write.csv(alldat,paste0(data_path,"model_data.csv"),row.names=F)
-  write.csv(demand,paste0(data_path,"demand_model_data.csv"),row.names=F)
-  write.csv(demand_frac,paste0(data_path,"demand_fracmodel_data.csv"),row.names=F)
+
   
