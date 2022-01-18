@@ -94,13 +94,16 @@
           if(length(simplify2array(strsplit(varname,":"))) > 1){
             both_names <- simplify2array(strsplit(varname,":"))
             
-            if(both_names[1] == "sindoy"){
+            rasterind <- which(both_names %in% raster_coefs)
+            fixedind <- ifelse(rasterind==1,2,1)
+            
+            if(both_names[fixedind] == "sindoy"){
               mult <- sin(doys * 0.0172)
-            } else if(both_names[1] == "cosdoy"){
+            } else if(both_names[fixedind] == "cosdoy"){
               mult <- cos(doys * 0.0172)
             } else stop(paste0("interaction ",both_names," must be added to function"))
                         
-            varname_clean <- both_names[2]            
+            varname_clean <- both_names[rasterind]            
             
           } else {
             mult <- 1
@@ -182,7 +185,10 @@
             out <- exp(out)
           } else if(trans=="sq"){
             out <- out^2
-          } else stop("trans must be NA, 'exp', or 'sq'")
+          } else if(trans=="ilogit"){
+            out <-  exp(out)/(1+exp(out)) 
+          } else stop("trans must be NA, 'exp', 'sq', or 'ilogit'")
+          
         }
         
         return(out)
@@ -190,14 +196,14 @@
       }
 
 #### calculate results ####
-  dem_stack <- MapModel(dem_coefs,dem_scale,trans="sq")
-  drain_stack <- MapModel(drain_coefs,drain_scale,trans="exp")
-  prec_amt_stack <- MapModel(prec_amt_coefs,prec_amt_scale,trans="exp")
-  prec_freq_stack <- MapModel(prec_freq_coefs,prec_freq_scale)
+  dem_stack <- MapModel(dem_coefs,dem_scale,depth="Surf",trans="sq")
+  drain_stack <- MapModel(drain_coefs,drain_scale,depth="Surf",trans="exp")
+  prec_amt_stack <- MapModel(prec_amt_coefs,prec_amt_scale,depth="Surf",trans="exp")
+  prec_freq_stack <- MapModel(prec_freq_coefs,prec_freq_scale,depth="Surf",trans="ilogit")
   
   
 #### plot results ####
-  pix <- 1e5 # max number of pixels to plot for each map, set to 1e7 for final figs or lower to test formatting
+  pix <- 1e5 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
   
   PlotFunc <- function(stack,dir=-1,title=""){
     minval <- min(cellStats(stack,min))
@@ -223,7 +229,7 @@
     
   }
 
-  PlotFunc(prec_amt_stack,dir=1,title="Deep vmc increase on days with precip")  
-  PlotFunc(drain_stack,dir=-1,title="Deep vmc decrease following vmc increase of 0.08 due to precip")
-  PlotFunc(dem_stack,dir=-1,title="Deep vmc demand per day")
- 
+  PlotFunc(prec_freq_stack,dir=1,title="probability of rainfall leading to increase in surface vmc")
+  PlotFunc(prec_amt_stack,dir=1,title="Surface vmc increase on days with precip")  
+  PlotFunc(drain_stack,dir=-1,title=paste0("Surface vmc decrease following vmc increase of ",prec_rng, " due to precip"))
+  PlotFunc(dem_stack,dir=-1,title="Surface vmc demand per day")

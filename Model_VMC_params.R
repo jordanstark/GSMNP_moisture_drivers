@@ -88,6 +88,11 @@
   freq_dat[[1]]$seas <- factor(ifelse(freq_dat[[1]]$doy > freq_dat[[1]]$midup &
                                         freq_dat[[1]]$doy < freq_dat[[1]]$middown, 
                                       "growing","winter"))
+  
+  freq_mod <- glmer(prec_occ ~ (elev + totrad)*(sindoy + cosdoy) + depth +
+                      start_vmc + I(start_vmc^2) + (1|SiteID),
+                    family=binomial,
+                    data=freq_dat[[1]])
 
   freq_mod_summer <- glmer(prec_occ ~ (elev + totrad)*(doy_frac + I(doy_frac^2)) + depth + start_vmc + (1|SiteID),
                     family=binomial,
