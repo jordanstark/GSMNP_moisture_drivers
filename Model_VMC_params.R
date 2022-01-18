@@ -270,3 +270,4 @@
   write.csv(dem_dat[[2]],paste0(model_out_path,"dem_scale.csv"),row.names=F)
   write.csv(drain_dat[[2]],paste0(model_out_path,"drain_scale.csv"),row.names=F)
   write.csv(amt_dat[[2]],paste0(model_out_path,"amt_scale.csv"),row.names=F)
+  
