@@ -231,7 +231,7 @@
   
 #### drainage model ####
   drain_dat_raw <- all_events[which(all_events$event=="drain"),]
-  drain_dat_raw <- mod_dat_drain[which(mod_dat_drain$rng_vmc <0),]
+  drain_dat_raw <- drain_dat_raw[which(drain_dat_raw$rng_vmc <0),]
   
   drain_dat <- PrepModels(drain_dat_raw,
                           c("elev","slope","tpi","start_vmc","prec_rng","prec_start"))
@@ -275,4 +275,10 @@
   write.csv(dem_dat[[2]],paste0(model_out_path,"dem_scale.csv"),row.names=F)
   write.csv(drain_dat[[2]],paste0(model_out_path,"drain_scale.csv"),row.names=F)
   write.csv(amt_dat[[2]],paste0(model_out_path,"amt_scale.csv"),row.names=F)
+  
+  # model objects
+  save(freq_mod,file=paste0(model_out_path,"prec_freq_mod.Rdata"))
+  save(amt_mod,file=paste0(model_out_path,"prec_amt_mod.Rdata"))
+  save(dem_mod,file=paste0(model_out_path,"dem_mod.Rdata"))
+  save(drain_mod,file=paste0(model_out_path,"drain_mod.Rdata"))
   
