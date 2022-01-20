@@ -227,6 +227,14 @@
   #           this contains start and end times and vmc values for all ID'd events
   #           also vmc range and number of hours, and for drainage, vmc range of prior precip
   
+  jobRunScript(paste0(script_path,"Model_VMC_params.R"),importEnv=T)
+  # inputs: 'all_events.csv' and 'cleaned_sensordat.csv' in intermediate_path
+  # outputs: four models -- precip frequency, amount of vmc increase with precip, rate of drainage, daily loss of vmc to demand
+  #          for each model, three files in model_out_path
+  #          model R file as '..._mod.Rdata' (eg prec_freq_mod.Rdata)
+  #          coefficients as '..._coefs.csv' (eg_prec_amt_coefs.csv)
+  #          scaling for each scaled x variable as '..._scale.csv' (eg drain_scale.csv)
+  
 ###########################################################
 ######################### figures #########################
 ###########################################################
@@ -236,3 +244,8 @@
 ## effects of topography on moisture
   source(paste0(script_path,"fig_topomodels.R"),local=T)
   
+## rasters predicting vmc demand
+  source(paste0(script_path,"VMC_predictor_rasters.R"),local=T)
+  
+## simulated soil moisture
+  source(paste0(script_path,"Model_1Monthvmc.R"),local=T)
