@@ -52,8 +52,9 @@
     # rgdal (spatial formats and transformations)
     # sp (spatial point processing)
   # modelling
-    # R2jags (Bayesian models interface with JAGS)
+    # segmented (breakpoint regression)
     # lme4 (linear mixed models - for checking overall patterns)
+    # lmerTest (p values for lme4)
     # MuMIn (marginal/conditional r2 values for mixed models)
   # visualization
     # ggplot2
