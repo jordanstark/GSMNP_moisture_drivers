@@ -9,6 +9,7 @@
     library(MuMIn)
     library(patchwork)
     library(tidyr)
+    library(lmerTest)
   
   # import data
     all_events <- read.csv(paste0(intermediate_path,"all_events.csv"))
@@ -81,106 +82,40 @@
     
   }
     
-#### precip frequency model ####
-  names(prec_freq_df)[names(prec_freq_df)=="vmc_midn"] <- "start_vmc"
-  
-  freq_dat <- PrepModels(prec_freq_df,c("start_vmc","totrad","elev"))
-  freq_dat[[1]]$seas <- factor(ifelse(freq_dat[[1]]$doy > freq_dat[[1]]$midup &
-                                        freq_dat[[1]]$doy < freq_dat[[1]]$middown, 
-                                      "growing","winter"))
-  
-  freq_mod <- glmer(prec_occ ~ (elev + totrad)*(sindoy + cosdoy) + depth +
-                      start_vmc + I(start_vmc^2) + (1|SiteID),
-                    family=binomial,
-                    data=freq_dat[[1]])
-
-  freq_mod_summer <- glmer(prec_occ ~ (elev + totrad)*(doy_frac + I(doy_frac^2)) + depth + start_vmc + (1|SiteID),
-                    family=binomial,
-                    data=freq_dat[[1]][which(freq_dat[[1]]$seas=="growing"),])
-  r.squaredGLMM(freq_mod_summer)
-  summary(freq_mod_summer)
-
-
-  freq_mod_winter <- glmer(prec_occ ~ (totrad + elev)*(doy_frac + I(doy_frac^2))  + depth + start_vmc + (1|SiteID),
-                           family=binomial,
-                           data=freq_dat[[1]][which(freq_dat[[1]]$seas=="winter"),])
-  r.squaredGLMM(freq_mod_winter)
-  summary(freq_mod_winter)
-  
-  
-  
-  freq_mod <- glmer(prec_occ ~ (seas + elev + totrad + sindoy + cosdoy)^2 + depth + start_vmc + I(start_vmc^2) + 
-                      (1|SiteID) - elev:totrad - sindoy:cosdoy,
-                    family=binomial,
-                    data=freq_dat[[1]])
-  
-  
-  med.mgu <- median(freq_dat[[1]]$midup)
-  med.md <- median(freq_dat[[1]]$middown)
-  
-  
-  pred.df <- data.frame(doy=rep(1:365,2,each=3),
-                        depth="Surf",
-                        seas=rep(c("growing","winter"),each=365*3),
-                        start_vmc=0,
-                        totrad=0,
-                        elev=rep(c(-2,0,2),365*2))
-
-  
-  
-  pred.df$sindoy <- sin(pred.df$doy * 0.0172)    
-  pred.df$cosdoy <- cos(pred.df$doy * 0.0172)
-  pred.df$doy_frac <- pred.df$doy / 365
-  
-  pred.df$prob_prec_summer <- predict(freq_mod_summer,pred.df,re.form=NA,type="response")
-  pred.df$prob_prec_winter <- predict(freq_mod_winter,pred.df,re.form=NA,type="response")
-  
-  pred.df$prob_prec_summer[which(pred.df$doy < med.mgu |
-                                   pred.df$doy > med.md)] <- NA
-  pred.df$prob_prec_winter[which(pred.df$doy > med.mgu &
-                                   pred.df$doy < med.md)] <- NA
-  
-  pred.df$full_pred <- ifelse(is.na(pred.df$prob_prec_summer),
-                              pred.df$prob_prec_winter,
-                              pred.df$prob_prec_summer)
-  
-  ggplot(pred.df, aes(x=doy, y=full_pred,color=elev)) +
-    geom_point() +
-    theme_bw()
-  
-  
-  plot_summer  <- ggplot(pred.df, aes(x=doy,y=prob_prec_summer,color=elev)) +
-                    geom_point() + 
-                    theme_bw()  +
-                    scale_y_continuous(limits=c(0,0.4))
-                  
-  plot_winter  <- ggplot(pred.df, aes(x=doy,y=prob_prec_winter,color=elev)) +
-                    geom_point() + 
-                    theme_bw()  +
-                    scale_y_continuous(limits=c(0,0.4))
-  
-  
-  plot_summer | plot_winter + plot_layout(guides="collect")
 
   
 #### functions ####
-  plot_sc_model <- function(model,depth="Surf",colorvar=NA,panelvar=NA,trans=NA){
+  plot_sc_model <- function(model,depth="Surf",colorvar=NA,panelvar=NA,trans=NA,xvar=NA,ann=T){
     xvars <- names(model@frame[2:(length(model@frame)-1)])
-
-    
     nreps <- ifelse(!is.na(colorvar),
-                      ifelse(!is.na(panelvar), 9, 3), 1)
+                    ifelse(!is.na(panelvar), 
+                           ifelse(!is.na(xvar),27,9),3),
+                    ifelse(!is.na(xvar),3,1))
     
-    pred.df <- data.frame(matrix(ncol=length(xvars),
-                                 nrow=365*nreps))
-    names(pred.df) <- xvars
+    if(ann){
+      pred.df <- data.frame(matrix(ncol=length(xvars),
+                                   nrow=365*nreps))
+      names(pred.df) <- xvars
+      
+      pred.df$doy <- NA
+      
+      pred.df$doy <- rep(1:365,each=nreps)
+      pred.df$sindoy <- sin(pred.df$doy*0.0172)
+      pred.df$cosdoy <- cos(pred.df$doy*0.0172)
+      
+    } else if(!is.na(xvar)){
+      pred.df <- data.frame(matrix(ncol=length(xvars),
+                                   nrow=nreps))
+      names(pred.df) <- xvars
+      
+      
+    } else stop("xvar must be provided when ann=F")
     
-    pred.df$doy <- NA
     
-    pred.df$doy <- rep(1:365,each=nreps)
-    pred.df$sindoy <- sin(pred.df$doy*0.0172)
-    pred.df$cosdoy <- cos(pred.df$doy*0.0172)
+   
     pred.df$depth <- depth
+    
+    
       
     pred.df[,!names(pred.df) %in% c("sindoy","cosdoy","doy","depth")] <- 0
     
@@ -190,29 +125,47 @@
     if(!is.na(panelvar)){
       pred.df[,panelvar] <- rep(c(-2,0,2),each=3)
     }
+    if(!is.na(xvar)){
+      pred.df[,xvar] <- rep(c(-2,0,2),each=nreps/3)
+    }
     
     pred.df$pred <- predict(model,pred.df,re.form=NA,type="response")
     
-    if(!is.na(trans)){
-      if(trans=="exp"){
-        pred.df$pred <- exp(pred.df$pred)
-      } else if(trans=="sq"){
-        pred.df$pred <- pred.df$pred^2
-      } else stop("trans must be 'exp' or 'sq'")
-    }
 
-    
-    p <- ggplot(pred.df, aes_string(x="doy",y="pred",color=colorvar)) +
-          geom_point() +
-          theme_bw()
+    if(ann){
+      p <- ggplot(pred.df, aes_string(x="doy",y="pred",color=colorvar)) +
+        geom_point() +
+        theme_bw()
+    } else if(!is.na(xvar)){
+      pred.df[,colorvar] <- factor(pred.df[,colorvar])
+      
+      p <- ggplot(pred.df, aes_string(x=xvar,y="pred",color=colorvar)) +
+        geom_line() +
+        theme_bw()
+    } else stop("xvar must be provided when ann=F")
+   
     
     if(!is.na(panelvar)){
-      p <- p + facet_wrap(facets=panelvar,ncol=1)
+      p <- p + facet_wrap(facets=panelvar,ncol=1) 
     }
     
     print(p)
   }
   
+#### precip frequency model ####
+    names(prec_freq_df)[names(prec_freq_df)=="vmc_midn"] <- "start_vmc"
+    
+    freq_dat <- PrepModels(prec_freq_df,c("start_vmc","totrad","elev"))
+    freq_dat[[1]]$seas <- factor(ifelse(freq_dat[[1]]$doy > freq_dat[[1]]$midup &
+                                          freq_dat[[1]]$doy < freq_dat[[1]]$middown, 
+                                        "growing","winter"))
+    
+    freq_mod <- glmer(prec_occ ~ (elev + totrad)*(sindoy + cosdoy) + depth +
+                        start_vmc + I(start_vmc^2) + (1|SiteID),
+                      family=binomial,
+                      data=freq_dat[[1]])
+    
+    
 #### demand model ####
   dem_dat_raw <- all_events[which(all_events$event=="dem"),]
   dem_dat_raw <- dem_dat_raw[which(dem_dat_raw$rng_vmc > -0.02), ]
@@ -220,15 +173,22 @@
   dem_dat <- PrepModels(dem_dat_raw, 
                         c("elev","rad","meant","vpd","start_vmc"))
 
-  
-  dem_mod <- lmer(sqrt(-1*rng_vmc) ~ rad + elev + meant + vpd + 
-                     start_vmc + I(start_vmc^2) + depth + (1|SiteID),
-                   dem_dat[[1]])
+  dem_mod <- lmer(sqrt(-1*rng_vmc) ~ elev + rad*meant + start_vmc + I(start_vmc^2) +
+                    depth + (1|SiteID),
+                  dem_dat[[1]])
 
-  plot_sc_model(dem_mod,colorvar="meant",panelvar="elev",trans="exp")  
+  plot_sc_model(dem_mod,colorvar="meant",panelvar="elev",trans="exp",ann=F,xvar="rad")  
   
+  plotdat <- dem_dat[[1]]
+  plotdat$pred_dem <- predict(dem_mod,re.form=NA)
   
+  plotdat$elev_cat <- cut(plotdat$elev,3)
+  plotdat$meant_cat <- cut(plotdat$meant,3)
   
+  ggplot(plotdat, aes(x=date,y=pred_dem,color=elev)) +
+    geom_line(aes(group=SiteID)) +
+    theme_classic() 
+
 #### drainage model ####
   drain_dat_raw <- all_events[which(all_events$event=="drain"),]
   drain_dat_raw <- drain_dat_raw[which(drain_dat_raw$rng_vmc <0),]
