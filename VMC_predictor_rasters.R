@@ -95,24 +95,29 @@
             both_names <- simplify2array(strsplit(varname,":"))
             
             rasterind <- which(both_names %in% raster_coefs)
-            fixedind <- ifelse(rasterind==1,2,1)
-            
-            if(both_names[fixedind] == "sindoy"){
-              mult <- sin(doys * 0.0172)
-            } else if(both_names[fixedind] == "cosdoy"){
-              mult <- cos(doys * 0.0172)
-            } else stop(paste0("interaction ",both_names," must be added to function"))
-                        
-            varname_clean <- both_names[rasterind]            
+            fixedind <- ifelse(length(rasterind) == length(both_names), NA, which(!both_names %in% raster_coefs))
+
+            if(!is.na(fixedind)){
+              if(both_names[fixedind] == "sindoy"){
+                mult <- sin(doys * 0.0172)
+              } else if(both_names[fixedind] == "cosdoy"){
+                mult <- cos(doys * 0.0172)
+              } else stop(paste0("interaction ",both_names," must be added to function"))
+              
+              sc_var <- calc(ScaleVar(get(both_names[rasterind]),both_names[rasterind],scaledat),
+                             function(x) x* mult,
+                             forceapply=T)
+            } else{
+              sc_var <- ScaleVar(get(both_names[1]),both_names[1],scaledat) * ScaleVar(get(both_names[2]),both_names[2],scaledat)
+            }
+          
             
           } else {
-            mult <- 1
-            varname_clean <- varname
+            sc_var <- ScaleVar(get(varname),varname,scaledat)
           }
           
-          dat <- calc(ScaleVar(get(varname_clean),varname_clean,scaledat),
-                      function(x) x * coefs$Estimate[which(coefs$X==varname)] * mult,
-                      forceapply=T)
+          dat <- sc_var * coefs$Estimate[which(coefs$X==varname)]
+
 
           if(nlayers(dat)==1){
             for(seas in 1:length(rlist)){
