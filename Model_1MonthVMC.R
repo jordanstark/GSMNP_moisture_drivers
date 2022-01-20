@@ -35,9 +35,9 @@
 
     
 #### what to model? ####
-  daterng <- seq(ymd("2021-02-01"),ymd("2021-05-01"),by="1 day")
+  daterng <- seq(ymd("2020-07-01"),ymd("2021-03-01"),by="1 day")
 
-  site <- "AT1.1"
+  site <- "ATE02"
   depth <- "Surf"
 
   # check that the data exist
@@ -147,11 +147,17 @@
                                             trans="exp") *14 # assuming 24h drainage
     }
     
-    site_data$dem[i] <- predict.sitemod(mod=dem_mod,
-                                        scaledat=dem_scale,
-                                        sitedata=site_data[i,],
-                                        start_vmc=site_data$pred_vmc[i],
-                                        trans="sq")
+    if(site_data$prec_amt[i]==0 & site_data$drain[i]==0){
+      # demand should occur every day, but we did not take it out in the predictive models so shouldn't be included here
+      site_data$dem[i] <- predict.sitemod(mod=dem_mod,
+                                          scaledat=dem_scale,
+                                          sitedata=site_data[i,],
+                                          start_vmc=site_data$pred_vmc[i],
+                                          trans="sq")
+    } else {
+      site_data$dem[i] <- 0
+    }
+    
     
     
     site_data$pred_vmc[i+1] <- site_data$pred_vmc[i] + site_data$prec_amt[i] - site_data$dem[i] - site_data$drain[i]
