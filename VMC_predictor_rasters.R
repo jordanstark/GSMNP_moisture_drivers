@@ -210,7 +210,7 @@
 #### plot results ####
   pix <- 1e5 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
   
-  PlotFunc <- function(stack,dir=-1,title=""){
+  PlotFunc <- function(stack,dir=-1,title="",file=NA){
     minval <- min(cellStats(stack,min))
     maxval <- max(cellStats(stack,max))
     
@@ -229,8 +229,16 @@
         coord_fixed(expand=F) 
     }
     
-    print(wrap_plots(plots) + plot_layout(guides="collect") + plot_annotation(title=title))
+    out <- wrap_plots(plots) + plot_layout(guides="collect") + plot_annotation(title=title)
+    
+    if(!is.na(file)){
+      tiff(filename=file,
+           width=16.8,height=7,units="cm",res=800,compression="lzw")
+      print(out)
+      dev.off()
+    }
    
+    print(out)
     
   }
 
