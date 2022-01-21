@@ -173,7 +173,7 @@
   dem_dat <- PrepModels(dem_dat_raw, 
                         c("elev","rad","meant","vpd","start_vmc"))
 
-  dem_mod <- lmer(sqrt(-1*rng_vmc) ~ elev + rad*meant + start_vmc + I(start_vmc^2) +
+  dem_mod <- lmer(sqrt(-1*rng_vmc) ~ rad*meant + start_vmc + I(start_vmc^2) +
                     depth + (1|SiteID),
                   dem_dat[[1]])
 
