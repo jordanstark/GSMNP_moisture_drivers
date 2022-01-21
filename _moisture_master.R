@@ -235,7 +235,14 @@
   #          model R file as '..._mod.Rdata' (eg prec_freq_mod.Rdata)
   #          coefficients as '..._coefs.csv' (eg_prec_amt_coefs.csv)
   #          scaling for each scaled x variable as '..._scale.csv' (eg drain_scale.csv)
-  # this script also includes code to plot outpus in several ways but plots are not currently saved
+  # this script also includes code to plot outputs in several ways but plots are not currently saved
+  
+  
+  ## simulated soil moisture
+  jobRunScript(paste0(script_path,"Model_1Monthvmc.R"),importEnv=T)
+  # inputs: model Rdata files and scale files from Model_VMC_params.R
+  #         and 'site_met_topo.csv' and 'cleaned_sensordata.csv' in intermediate_path
+  
   
 ###########################################################
 ######################### figures #########################
@@ -249,5 +256,3 @@
 ## rasters predicting vmc demand
   source(paste0(script_path,"VMC_predictor_rasters.R"),local=T)
   
-## simulated soil moisture
-  source(paste0(script_path,"Model_1Monthvmc.R"),local=T)
