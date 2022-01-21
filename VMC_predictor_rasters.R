@@ -208,9 +208,9 @@
   
   
 #### plot results ####
-  pix <- 1e5 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
+  pix <- 1e8 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
   
-  PlotFunc <- function(stack,dir=-1,title="",file=NA){
+  PlotFunc <- function(stack,dir=-1,title="",print=T,file=NA){
     minval <- min(cellStats(stack,min))
     maxval <- max(cellStats(stack,max))
     
@@ -233,16 +233,24 @@
     
     if(!is.na(file)){
       tiff(filename=file,
-           width=16.8,height=7,units="cm",res=800,compression="lzw")
+           width=24,height=10,units="cm",res=400,compression="lzw")
       print(out)
       dev.off()
     }
    
-    print(out)
+    if(print) {print(out)}
     
   }
 
-  PlotFunc(prec_freq_stack,dir=1,title="probability of rainfall leading to increase in surface vmc")
-  PlotFunc(prec_amt_stack,dir=1,title="Surface vmc increase on days with precip")  
-  PlotFunc(drain_stack,dir=-1,title=paste0("Surface vmc decrease following vmc increase of ",prec_rng, " due to precip"))
-  PlotFunc(dem_stack,dir=-1,title="Surface vmc demand per day")
+  PlotFunc(prec_freq_stack,dir=1,
+           title="Probability of rainfall leading to increase in surface vmc",
+           print=F,file=paste0(fig_path,"precip_freq.tif"))
+  PlotFunc(prec_amt_stack,dir=1,
+           title="Surface vmc increase on days with precip",
+           print=F,file=paste0(fig_path,"precip_amt.tif"))  
+  PlotFunc(drain_stack,dir=-1,
+           title=paste0("Rate of surface vmc decrease per hour following vmc increase of ",prec_rng, " due to precip"),
+           print=F,file=paste0(fig_path,"drain_rate.tif"))
+  PlotFunc(dem_stack,dir=-1,
+           title="Surface vmc evapotranspiration decrease per day",
+           print=F,file=paste0(fig_path,"demand.tif"))

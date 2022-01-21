@@ -207,7 +207,7 @@
 ######### model variation across the landscape ############
 ###########################################################
 ## model overall spatial trends in annual dataset
-  jobRunScript(paste0(script_path,"Model_topotrends.R"),importEnv=T)
+  jobRunScript(paste0(script_path,"Model_topotrends2.R"),importEnv=T)
   # inputs: 'model_data.csv' in intermediate_path
   # outputs: 'summer_drivers_lmer.RData' in model_path with model for making figs
   #          'scaled_summer_vmc_drivers.csv' with scaled model_data from summer in intermediate_path
@@ -235,6 +235,7 @@
   #          model R file as '..._mod.Rdata' (eg prec_freq_mod.Rdata)
   #          coefficients as '..._coefs.csv' (eg_prec_amt_coefs.csv)
   #          scaling for each scaled x variable as '..._scale.csv' (eg drain_scale.csv)
+  # this script also includes code to plot outpus in several ways but plots are not currently saved
   
 ###########################################################
 ######################### figures #########################
@@ -243,7 +244,7 @@
   source(paste0(script_path,"Fig_sensordeployments.R"),local=T)
   
 ## effects of topography on moisture
-  source(paste0(script_path,"fig_topomodels.R"),local=T)
+  source(paste0(script_path,"fig_topomodels2.R"),local=T)
   
 ## rasters predicting vmc demand
   source(paste0(script_path,"VMC_predictor_rasters.R"),local=T)
