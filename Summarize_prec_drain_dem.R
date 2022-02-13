@@ -35,7 +35,7 @@
     
 #### function to identify precip, drainage, and demand in data ####
     
-    IDevents <- function(vmc,times,summary=F) {
+    IDevents <- function(vmc,times,summary=F,dem_raw=F) {
       df <- data.frame(vmc=vmc,
                        smooth=as.numeric(stats::filter(vmc,rep(1,24),sides=1)/24),
                        time=times,
@@ -236,6 +236,7 @@
           if(!is.na(seg)){ # regression worked
           if(is.numeric(summary(seg)$psi[2])) { #breakpoint ID'd
           if(summary(seg)$r.squared > 0.2 & # descriptive fit
+             summary(seg)$Ttable[2,1] <0 & #soil moisture declining in drainage event
              summary(seg)$Ttable[2,1] + summary(seg)$Ttable[3,1] < 0) { #soil moisture was falling during demand segment
             
             drain.df$breakpt[i] <- floor(summary(seg)$psi[2])
@@ -277,6 +278,8 @@
      dem.df.raw <- dem.df.raw[which(!is.na(dem.df.raw$start_vmc) & !is.na(dem.df.raw$end_vmc)),]
      dem.df.raw <- dem.df.raw[which(as.numeric(difftime(dem.df.raw$endtime,dem.df.raw$starttime,units="hours")) > 24),]
      
+     dem.df.raw$rng_vmc <- dem.df.raw$start_vmc - dem.df.raw$end_vmc
+     
      # calculate all days within range of demand events
      dem_hours <- ymd_hms(NA)
 
@@ -285,7 +288,7 @@
      }
      dem_days <- dem_hours[which(hour(dem_hours)==0)]
 
-     
+
      # calculate start and end vmc for each day
      dem.df <- data.frame(starttime=dem_days,
                           start_vmc=NA,
@@ -312,6 +315,7 @@
      dem.df$rng_vmc <- dem.df$end_vmc - dem.df$start_vmc
      
      
+     
      ## apply calculated times to full timeseries 
      
      for(i in 1:length(drain.df[,1])){
@@ -319,8 +323,14 @@
                         df$time<=drain.df$endtime[i])] <- T
      }
      for(i in 1:length(dem.df[,1])){
-       df$dem[which(df$time>=dem.df$starttime[i] &
-                      df$time<=dem.df$endtime[i])] <- T
+       if(!dem_raw){
+         df$dem[which(df$time>=dem.df$starttime[i] &
+                        df$time<=dem.df$endtime[i])] <- T
+       }
+       if(dem_raw){
+         df$dem[which(df$time>=dem.df.raw$starttime[i] &
+                        df$time<=dem.df.raw$endtime[i])] <- T
+       }
      }
 
      
@@ -343,8 +353,13 @@
                                 endtime=ymd_hms(NA),
                                 start_vmc=NA,
                                 end_vmc=NA,
-                                #slope=NA,
                                 rng_vmc=NA)
+        dem.df.raw <- data.frame(starttime=ymd_hms(NA),
+                                 endtime=ymd_hms(NA),
+                                 start_vmc=NA,
+                                 slope=NA,
+                                 end_vmc=NA,
+                                 rng_vmc=NA)
         prec.df <- data.frame(starttime=ymd_hms(NA),
                               endtime=ymd_hms(NA),
                               start_vmc=NA,
@@ -353,11 +368,11 @@
       }
 
     # plot a portion of the data as a diagnostic      
-      ggplot(df[df$time>ymd("2021-02-01") &
-                  df$time<ymd("2021-05-01"),],
-             aes(x=time,y=vmc,color=event,group=NA)) +
-        geom_line(size=1) +
-        theme_classic()
+      # ggplot(df[df$time>ymd("2021-02-01") &
+      #             df$time<ymd("2021-05-01"),],
+      #        aes(x=time,y=vmc,color=event,group=NA)) +
+      #   geom_line(size=1) +
+      #   theme_classic()
 
      
       
@@ -371,19 +386,30 @@
       
       dem.df$prec_rng <- NA
       dem.df$prec_start <- NA
+      
+      dem.df.raw$prec_rng <- NA
+      dem.df.raw$prec_start <- NA
+      
       prec.df$prec_rng <- NA
       prec.df$prec_start <- NA
+      prec.df$slope <- NA
+      prec.df$r2 <- NA
 
       
 
 
       
       dem.df$event <- "dem"
+      dem.df.raw$event <- "dem"
       drain.df$event <- "drain"
       prec.df$event <- "prec"
       
-      all.df <- rbind(dem.df,prec.df[,names(dem.df)],drain.df[,names(dem.df)])
-      
+      if(!dem_raw){
+        all.df <- rbind(dem.df,prec.df[,names(dem.df)],drain.df[,names(dem.df)])
+      }
+      if(dem_raw){
+        all.df <- rbind(dem.df.raw,prec.df[,names(dem.df.raw)],drain.df[,names(dem.df.raw)])
+      }
       
       if(summary==T) {return(list(df$event,all.df))} else {return(df$event)}
     }
@@ -411,8 +437,8 @@
       
       bysite[[j]] <- merge(bysite[[j]],all_hours,all=T)
       
-      out_Surf <- IDevents(bysite[[j]]$vmc_Surf,bysite[[j]]$timestamp,summary=T)
-      out_Deep <- IDevents(bysite[[j]]$vmc_Deep,bysite[[j]]$timestamp,summary=T)
+      out_Surf <- IDevents(bysite[[j]]$vmc_Surf,bysite[[j]]$timestamp,summary=T,dem_raw=F)
+      out_Deep <- IDevents(bysite[[j]]$vmc_Deep,bysite[[j]]$timestamp,summary=T,dem_raw=F)
       
       bysite[[j]]$event_Surf <- out_Surf[[1]]
       bysite[[j]]$event_Deep <- out_Deep[[1]]
@@ -445,7 +471,7 @@
     hour_vmc <- do.call(rbind,bysite)
     event_summary <- do.call(rbind,summary_list)
     
-#### visual check of success ####
+#### visual checks ####
     
     site <- "AT1.1"
     mintime <- ymd("2021-02-01")#min(hour_vmc$timestamp) #ymd("2021-02-01")
@@ -480,8 +506,47 @@
       geom_line(stat="smooth",method="lm") + 
       theme_classic() + 
       theme(legend.position="none")
-
-        
+    
+  # combine summary dfs to compare drainage and demand data - this only works with dem_raw=T on lines 440 and 441
+  #   compare_slope_df <- event_summary[event_summary$event=="drain",
+  #                                     c("starttime","endtime","rng_vmc","slope","SiteID","depth")]
+  #   names(compare_slope_df) <- c("drain_starttime","drain_endtime","drain_rng","drain_slope","SiteID","depth")
+  #   
+  #   compare_dem <- event_summary[event_summary$event=="dem",
+  #                                c("starttime","endtime","rng_vmc","slope","SiteID","depth")]
+  #   names(compare_dem) <- c("dem_starttime","dem_endtime","dem_rng","dem_slope","SiteID","depth")
+  #   
+  #   compare_dem$drain_endtime <- compare_dem$dem_starttime - hours(1)
+  #   
+  #   compare_slope_df <- merge(compare_slope_df,compare_dem, all=T)
+  #   
+  # # plot drainage vs demand
+  #   ggplot(compare_slope_df,aes(x=drain_slope*-1,y=dem_slope*-1,color=SiteID)) +
+  #     geom_point(alpha=0.4) +
+  #     geom_line(stat="smooth",method="lm",se=F,alpha=0.7) +
+  #     theme_classic() +
+  #     theme(legend.position="none") 
+  #   
+  #   ggplot(compare_slope_df,aes(x=drain_slope*-1,y=dem_slope*-1,color=SiteID)) +
+  #     geom_point(alpha=0.2) +
+  #     geom_line(stat="smooth",method="lm",se=F,alpha=0.7) +
+  #     theme_classic() +
+  #     theme(legend.position="none") +
+  #     scale_y_continuous(trans="log",breaks=c(1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1)) +
+  #     scale_x_continuous(trans="log",breaks=c(1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1))
+  #   
+  #   ggplot(compare_slope_df,aes(x=drain_slope*-1,y=dem_slope*-1,color=SiteID)) +
+  #     geom_point(alpha=0.2) +
+  #     geom_line(stat="smooth",method="lm",se=F,alpha=0.7) +
+  #     geom_abline(slope=1,intercept=0) +
+  #     theme_classic() +
+  #     theme(legend.position="none") +
+  #     scale_y_continuous(trans="log",breaks=c(1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1)) +
+  #     scale_x_continuous(trans="log",breaks=c(1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1))
+  # 
+  # 
+  #   
+  #       
 #### summarize data for modelling ####
     
     event_summary$date <- as_date(event_summary$starttime)
