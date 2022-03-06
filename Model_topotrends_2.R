@@ -1,5 +1,5 @@
 #### modelling broad topographic trends in sensor data ####
-## edited for manuscript, Jordan Stark, Jan 2022
+## edited for manuscript, Jordan Stark, Jan 2022, additional edits by JDF
 
 #### setup ####
   ## packages
@@ -49,35 +49,184 @@
     #write.csv(deep_all,paste0(intermediate_path,"deep_timeseries.csv"),row.names=F)
     
 #### effect sizes of drivers on summer data####
-  scaledat <- fulldf[fulldf$doy>fulldf$mat &
-                         fulldf$doy<fulldf$sen,
-                       c("vmc_Deep","SiteID","elev","slope","log_tci",
-                         "tpi","prec","vpd","rad","meant","maxEVI","prec_dm1")]
-  names(scaledat)[names(scaledat)=="vmc_Deep"] <- "vmc"
-    
-
-    
-  scaledat$elev <- scale(scaledat$elev)
-  scaledat$slope <- scale(scaledat$slope)
-  scaledat$log_tci <- scale(scaledat$log_tci)
-  scaledat$tpi <- scale(scaledat$tpi)
-  scaledat$prec <- scale(scaledat$prec)
-  scaledat$vpd <- scale(scaledat$vpd)
-  scaledat$rad <- scale(scaledat$rad)
-  scaledat$meant <- scale(scaledat$meant)
-  scaledat$maxEVI <- scale(sqrt(scaledat$maxEVI))
+  scale_summer_nv <- fulldf[fulldf$doy>fulldf$mat &
+                        fulldf$doy<fulldf$sen &
+                          fulldf$val==F,
+                      c("vmc_Deep","SiteID","elev","slope","log_tci",
+                        "tpi","prec","vpd","rad","meant","maxEVI","prec_dm1","doy")]
+  names(scale_summer_nv)[names(scale_summer_nv)=="vmc_Deep"] <- "vmc"
   
-  scaledat$logit_vmc <- logit(scaledat$vmc)
+  #change dataset to full year, and remove validation sensors
+  scale_all_nv <- fulldf[fulldf$val==F,
+                     c("vmc_Deep","SiteID","elev","slope","log_tci",
+                       "tpi","prec","vpd","rad","meant","maxEVI","prec_dm1","doy")]
+  names(scale_all_nv)[names(scale_all_nv)=="vmc_Deep"] <- "vmc"
+    
+  # scale and save parameters
+  summernv_scales <- data.frame(var=c("elev","slope","log_tci","tpi","prec",
+                                        "rad","meant","maxEVI"),
+                                means=NA,
+                                sds=NA)
+  allnv_scales <- summernv_scales
+  
+  
+  for(i in 1:length(summernv_scales$var)){
+    var <- summernv_scales$var[i]
+    
+    summermean <- mean(scale_summer_nv[,var],na.rm=T)
+    summersd <- sd(scale_summer_nv[,var],na.rm=T)
+    
+    summernv_scales$means[i] <- summermean
+    summernv_scales$sds[i] <- summersd
+    
+    scale_summer_nv[,var] <- (scale_summer_nv[,var] - summermean)/summersd
+    
+    
+    allmean <- mean(scale_all_nv[,var],na.rm=T)
+    allsd <- sd(scale_all_nv[,var],na.rm=T)
+    
+    allnv_scales$means[i] <- allmean
+    allnv_scales$sds[i] <- allsd
+    
+    scale_all_nv[,var] <- (scale_all_nv[,var] - allmean)/allsd
+    
+    
+  }
+  
+  
+  scale_all_nv$sindoy <- scale(sin(scale_all_nv$doy*0.0172))
+  scale_all_nv$cosdoy <- scale(cos(scale_all_nv$doy*0.0172))
+  
+  scale_all_nv$logit_vmc <- logit(scale_all_nv$vmc)
+  scale_summer_nv$logit_vmc <- logit(scale_summer_nv$vmc)
   
   fullmod <- lmer(logit_vmc ~ elev + log_tci + slope + tpi + prec + rad + meant  + (1|SiteID), 
-                   scaledat)
+                   scale_summer_nv)
   r.squaredGLMM(fullmod)
   
   vif(fullmod)
     
   # save data and model for figures
   save(fullmod,file=paste0(model_out_path,"summer_drivers_lmer_2.RData"))
-  write.csv(scaledat,paste0(intermediate_path,"scaled_summer_vmc_drivers_2.csv"))
+  write.csv(scale_summer_nv,paste0(intermediate_path,"scaled_summer_vmc_drivers_2.csv"),row.names=F)
+  write.csv(summernv_scales,paste0(intermediate_path,"scaling_values_summer_nonval.csv"),row.names=F)
+  
+  # JDF: model with seasonal effects
+  
+  fullmod2 <- lmer(logit_vmc ~ (elev + log_tci + slope + tpi + prec + rad + meant)*(sindoy+cosdoy)  + (1|SiteID), 
+                   scale_all_nv)
+  
+  summary(fullmod2)
+  r.squaredGLMM(fullmod2)
+  #anova(fullmod,fullmod2)
+  
+  # save data and model for figures
+  save(fullmod2,file=paste0(model_out_path,"annual_drivers_lmer_2.RData"))
+  write.csv(scale_all_nv,paste0(intermediate_path,"scaled_vmc_drivers_2.csv"),row.names=F)
+  write.csv(allnv_scales,paste0(intermediate_path,"scaling_values_nonval.csv"),row.names=F)
+  
+  
+  
+  #BRT: not working
+  # library(dismo)
+  # library(gbm)
+  # gbm1 = gbm.step(data=na.omit(scaledat),gbm.x = c(3,4,6,7,9,10,14,15),gbm.y=16,family="gaussian",tree.complexity=2,learning.rate=.01,bag.fraction=.7)
+  # summary(gbm1)
+  
+  ########## Predict validation sensors
+  
+  # function to scale based on original dataset
+  ScaleVar <- function(value, varname, scaledat){
+    return((value - scaledat$means[which(scaledat$var==varname)])/scaledat$sds[which(scaledat$var==varname)])
+  }
+  
+  # get mean and sd for transformations
+  
+  scaledatV <- fulldf[fulldf$val==T,
+                     c("vmc_Deep","SiteID","elev","slope","log_tci",
+                       "tpi","prec","vpd","rad","meant","maxEVI","prec_dm1","doy")]
+  names(scaledatV)[names(scaledatV)=="vmc_Deep"] <- "vmc"
+  
+  scaledatV$elev <- ScaleVar(scaledatV$elev,"elev",allnv_scales)
+  scaledatV$slope <-  ScaleVar(scaledatV$slope,"slope",allnv_scales)
+  scaledatV$log_tci <-  ScaleVar(scaledatV$log_tci,"log_tci",allnv_scales)
+  scaledatV$tpi <- ScaleVar(scaledatV$tpi,"tpi",allnv_scales)
+  scaledatV$prec <- ScaleVar(scaledatV$prec,"prec",allnv_scales)
+  scaledatV$rad <- ScaleVar(scaledatV$rad,"rad",allnv_scales)
+  scaledatV$meant <- ScaleVar(scaledatV$meant,"meant",allnv_scales)
+  
+  scaledatV$sindoy <- sin(scaledatV$doy*0.0172)
+  scaledatV$cosdoy <- cos(scaledatV$doy*0.0172)
+  scaledatV$logit_vmc <- logit(scaledatV$vmc)
+  
+  #predict with lmer model
+  scaledatV$logit_vmc.pred <- predict(fullmod2,newdata=scaledatV,re.form=NA)
+
+  #back transform predicted values
+  scaledatV$vmc.pred = ilogit(scaledatV$logit_vmc.pred)
+  
+  #examine predicted-observed  
+  plot(scaledatV$logit_vmc.pred,scaledatV$logit_vmc)
+  plot(scaledatV$vmc.pred,scaledatV$vmc,xlim=c(0,.4),ylim=c(0,.4))
+  abline(0,1)  
+  
+  #model bias
+  accuracy = abs(scaledatV$vmc.pred-scaledatV$vmc)
+  bias = (scaledatV$vmc.pred-scaledatV$vmc)
+  plot(scaledatV$vmc,bias); abline(h=0)
+  median(accuracy,na.rm=T) #0.03
+  
+  #validation stats by month
+  scaledatV$month = month(as.Date(scaledatV$doy,origin="2019-01-01"))
+  par(mfrow=c(3,4),mar=c(3,3,1,1),oma=c(3,3,1,1))
+    for(i in 1:12)  {
+      plot(scaledatV$vmc[scaledatV$month==i],bias[scaledatV$month==i], 
+           col=as.numeric(as.factor(scaledatV$SiteID)),
+           xlim=c(0,.4),ylim=c(-.15,.15),main=month.abb[i],
+           xlab="VMC",ylab="Absolute Error")
+      abline(h=0,col="gray",lty=2)
+      text(.35,.1,  round(  median( accuracy[scaledatV$month==i],na.rm=T),3)    )
+      text(.35,.13,"MAE=")
+    }
+  #par(mfrow=c(1,1),oma=c(3,3,1,1),new=T)
+  mtext("Observed VMC",side=1,at=-.7,line=3.5,cex=1.8)
+  mtext("Absolute Error",side=2,at=.45,line=51,cex=1.8)
+  
+  #this model seems way too accurate. Let's try a model with only elevation and season:
+  fullmod3 <- lmer(logit_vmc ~ (elev)*(sindoy+cosdoy)  + (1|SiteID), scale_all_nv)
+  summary(fullmod3)
+  r.squaredGLMM(fullmod3) #fixed effect R2 is 23.6
+  #predict with lmer model
+  scaledatV$logit_vmc.pred.elev <- predict(fullmod3,newdata=scaledatV,re.form=NA)
+  #back transform predicted values
+  scaledatV$vmc.pred.elev = ilogit(scaledatV$logit_vmc.pred.elev)
+  par(mfrow=c(1,1))
+  plot(scaledatV$vmc.pred.elev,scaledatV$vmc,col=as.numeric(as.factor(scaledatV$SiteID))) ; abline(0,1)
+  accuracy.elev = abs(scaledatV$vmc.pred.elev-scaledatV$vmc)
+  bias.elev = (scaledatV$vmc.pred.elev-scaledatV$vmc)
+  plot(scaledatV$vmc,bias.elev); abline(h=0)
+  median(accuracy.elev,na.rm=T) #0.03
+  plot(scaledatV$vmc.pred.elev,scaledatV$vmc.pred,col=as.numeric(as.factor(scaledatV$SiteID))); abline(0,1)
+  plot(scaledatV$vmc.pred.elev,scaledatV$vmc,col="red2"); abline(0,1)
+  points(scaledatV$vmc.pred,scaledatV$vmc,col="blue"); abline(0,1)
+  mean(accuracy,na.rm=T)
+  mean(accuracy.elev,na.rm=T) #elevation and season are sufficient to make a good model
+  plot(scaledatV$elev,scaledatV$vmc,col=as.numeric(as.factor(scaledatV$SiteID)))
+  
+  par(mfrow=c(3,4),mar=c(3,3,1,1),oma=c(3,3,1,1))
+  for(i in 1:12)  {
+    plot(scaledatV$vmc[scaledatV$month==i],bias.elev[scaledatV$month==i], 
+         col=as.numeric(as.factor(scaledatV$SiteID)),
+         xlim=c(0,.4),ylim=c(-.15,.15),main=month.abb[i],
+         xlab="VMC",ylab="Absolute Error")
+    abline(h=0,col="gray",lty=2)
+    text(.35,.1,  round(  median( accuracy.elev[scaledatV$month==i],na.rm=T),3)    )
+    text(.35,.13,"MAE=")
+  }
+  #par(mfrow=c(1,1),oma=c(3,3,1,1),new=T)
+  mtext("Observed VMC",side=1,at=-.7,line=3.5,cex=1.8)
+  mtext("Absolute Error",side=2,at=.45,line=51,cex=1.8)
+  
   
 #### summarize data annually ####
   ## variables of interest
@@ -89,7 +238,7 @@
                            deep_all,median,na.rm=T,na.action=na.pass)
     deep_ann$logit_vmc <- logit(deep_ann$vmc)
     
-    write.csv(deep_ann, paste0(intermediate_path,"annual_vmc_drivers.csv"),row..names=F)
+    write.csv(deep_ann, paste0(intermediate_path,"annual_vmc_drivers.csv"),row.names=F)
     
   ## annual coefficient of variation
     deep_var <- aggregate(as.formula(paste0("vmc ~ SiteID +", paste(topo_vars,collapse=" + "))),
