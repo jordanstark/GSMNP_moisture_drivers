@@ -146,7 +146,7 @@
                              direction=dir,
                              na.value="white") +
         theme(legend.key.height=unit(0.5,"cm")) +
-        labs(x="",y="",title=names(pred[i])) +
+        labs(x="",y="",title=names(pred)[i]) +
         coord_fixed(expand=F) 
     }
     
@@ -166,4 +166,8 @@
   PlotFunc(pred,dir=1,
            title="Predicted VMC",
            print=F,file=paste0(fig_path,"pred_vmc_fullmod2.tif"))
+
+  PlotFunc(logit(pred),dir=1,
+           title="logit(Predicted VMC)",
+           print=F,file=paste0(fig_path,"pred_logit_vmc_fullmod2.tif"))  
   
