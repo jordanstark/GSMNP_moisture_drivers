@@ -107,9 +107,9 @@
   vif(fullmod)
     
   # save data and model for figures
-  save(fullmod,file=paste0(model_out_path,"summer_drivers_lmer_2.RData"))
-  write.csv(scale_summer_nv,paste0(intermediate_path,"scaled_summer_vmc_drivers_2.csv"),row.names=F)
-  write.csv(summernv_scales,paste0(intermediate_path,"scaling_values_summer_nonval.csv"),row.names=F)
+  save(fullmod,file=paste0(model_out_path,"summer_drivers_lmer_mod2.RData"))
+  write.csv(scale_summer_nv,paste0(intermediate_path,"scaled_summer_vmc_drivers_mod2.csv"),row.names=F)
+  write.csv(summernv_scales,paste0(intermediate_path,"scaling_values_summer_mod2.csv"),row.names=F)
   
   # JDF: model with seasonal effects
   

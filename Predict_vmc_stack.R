@@ -1,4 +1,4 @@
-## apply summer lmer model to make predictive rastesr
+## apply summer lmer model to make predictive raster stack
 ## Jordan Stark, Mar 2022
 
 #### setup ####
@@ -6,10 +6,7 @@
     library(raster)
     library(rgdal)
     library(lubridate)
-    library(ggplot2)
-    library(rasterVis)
-    library(patchwork)
-    library(lme4)
+    
 
   ## logit functions
     logit <- function(x) log(x/(1-x))
@@ -26,11 +23,8 @@
       scales <- read.csv(paste0(intermediate_path,"scaling_values_nonval_2.csv"))
       
     # dates to predict
-      dates <- c("June1_"=ymd("2020-06-01"),
-                 "June15_"=ymd("2020-06-15"),
-                 "July1_"=ymd("2020-07-01"),
-                 "July15_"=ymd("2020-07-15"),
-                 "Aug1_"=ymd("2020-08-01"))
+      dates <- c(seq(ymd("2020-05-01"),ymd("2020-09-01"),by="1 day"),
+                 seq(ymd("2021-05-01"),ymd("2021-07-10"),by="1 day")) # last day of microclim pred
       doys <- yday(dates)
       
 
@@ -42,7 +36,7 @@
       
       crs(rad) <- crs(elev) <- CRS("+proj=utm +zone=17 +datum=NAD27")
       
-      rad <- rad[[which(names(rad) %in% paste0("rad",sprintf("%03d",doys)))]]
+      rad <- rad[[paste0("rad",sprintf("%03d",doys))]]
       
       slope <- terrain(elev,opt="slope",unit="degrees")
       tpi <- terrain(elev,opt="tpi")
@@ -60,7 +54,7 @@
       
       prec <- stack(prec_files[which(prec_dates %in% dates)])
       names(prec) <- names(dates)
-      
+
       # get yesterday's precip
       prec_dates_dm1 <- prec_dates + days(1)
       
@@ -69,16 +63,14 @@
       
       
       # transform precip rasters to crs of other rasters
-      prec_tr <- projectRaster(prec,elev,method="ngb")
-      prec_dm1_tr <- projectRaster(prec_dm1,elev,method="ngb")
-      
-      
-      vpd_files <- list.files(paste0(gis_path,"PRISM/daily_vpd"),
-                              full.names=T)
-      vpd_dates <- ymd(simplify2array(strsplit(vpd_files,"vpd_"))[2,])
-      
-      vpd <- stack(vpd_files[which(vpd_dates %in% dates)])
-      names(vpd) <- names(dates)
+      prec_tr <- projectRaster(prec,elev,method="ngb",
+                               filename=paste0(intermediate_path,"prec_tmp"),
+                               overwrite=T)
+      prec_dm1_tr <- projectRaster(prec_dm1,elev,method="ngb",
+                                   filename=paste0(intermediate_path,"precdm1_tmp"),
+                                   overwrite=T)
+      prec_tr <- stack(paste0(intermediate_path,"prec_tmp.gri"))
+      prec_dm1_tr <- stack(paste0(intermediate_path,"precdm1_tmp.gri"))
       
       
       
@@ -183,7 +175,6 @@
       tpi_sc <- ScaleVar(tpi,"tpi",scales)
       prec_sc <- ScaleVar(prec_tr,"prec",scales)
       prec_dm1_sc <- ScaleVar(prec_dm1_tr,"prec_dm1",scales)
-      vpd_sc <- ScaleVar(vpd,"vpd",scales)
       rad_sc <- ScaleVar(rad,"rad",scales)
       meant_sc <- ScaleVar(meant,"meant",scales)
     
@@ -198,71 +189,38 @@
                       coefs["slope",] * slope_sc +
                       coefs["tpi",] * tpi_sc 
   
-  # final prediction 
-    pred <- fixed_pred + 
-              coefs["prec",] * prec_sc +
-              coefs["prec_dm1",] * prec_dm1_sc +
-              coefs["meant",] * meant_sc +
-              coefs["rad",] * rad_sc +
-              coefs["prec:meant",] * prec_sc * meant_sc+
-              coefs["prec:rad",] * prec_sc * rad_sc +
-              coefs["meant:rad",] * meant_sc * rad_sc+
-              coefs["prec:meant:rad",] * prec_sc * meant_sc * rad_sc
-    
-    
-    pred <- ilogit(pred)
-    
-    names(pred) <- paste0(names(dates),dates)
-    
-    
-  # mask based on leafout
-    pred <- mask(pred,seasmask)
-    
-#### plot results ####
-  pix <- 1e7 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
-  
-  PlotFunc <- function(stack,dir=-1,title="",print=T,file=NA){
-    minval <- min(cellStats(stack,min))
-    maxval <- max(cellStats(stack,max))
-    
-    plots <- list()
-    for(i in 1:nlayers(stack)){
-      plots[[i]] <-  gplot(stack[[i]],maxpixels=pix)+
-        geom_tile(aes(fill=value)) +
-        theme_void() +
-        scale_fill_distiller(name="",
-                             limits=c(minval,maxval),
-                             palette="RdYlGn",
-                             direction=dir,
-                             na.value="white") +
-        theme(legend.key.height=unit(0.5,"cm")) +
-        labs(x="",y="",title=names(pred)[i]) +
-        coord_fixed(expand=F) 
-    }
-    
-    out <- wrap_plots(plots) + plot_layout(guides="collect") + plot_annotation(title=title)
-    
-    if(!is.na(file)){
-      tiff(filename=file,
-           width=24,height=10,units="cm",res=400,compression="lzw")
-      print(out)
-      dev.off()
-    }
+ for(i in 1:nlayers(prec_sc)){
+
+   pred <- fixed_pred + 
+     coefs["prec",] * prec_sc[[i]] +
+     coefs["prec_dm1",] * prec_dm1_sc[[i]] +
+     coefs["meant",] * meant_sc[[i]] +
+     coefs["rad",] * rad_sc[[i]] +
+     coefs["prec:meant",] * prec_sc[[i]] * meant_sc[[i]] +
+     coefs["prec:rad",] * prec_sc[[i]] * rad_sc[[i]] +
+     coefs["meant:rad",] * meant_sc[[i]] * rad_sc[[i]] +
+     coefs["prec:meant:rad",] * prec_sc[[i]] * meant_sc[[i]] * rad_sc[[i]]
    
-    if(print) {print(out)}
+   
+   pred <- ilogit(pred)
+
+   # mask based on leafout
+   pred <- mask(pred,seasmask[[i]])
+   
+   writeRaster(pred,paste0(pred_path,"/deep_vmc_summer/pred_",dates[i],".tif"))
+   
+ }
+      
     
-  }
-
-  PlotFunc(pred[[1:5]],dir=1,
-           title="Predicted VMC",
-           print=F,file=paste0(fig_path,"pred_vmc_summer.tif"))
-
-  PlotFunc(logit(pred[[1:5]]),dir=1,
-           title="logit(Predicted VMC)",
-           print=F,file=paste0(fig_path,"pred_logit_vmc_summer.tif"))  
+  # final prediction 
+      
+  preds <- stack(list.files(paste0(pred_path,"/deep_vmc_summer/"),full.names=T))
+   
   
-  PlotFunc(fixed_pred,dir=1,
-           print=F,file=paste0(fig_path,"logit_mean_vmc_pred.tif"))
-  PlotFunc(ilogit(fixed_pred),dir=1,
-           print=F,file=paste0(fig_path,"mean_vmc_pred.tif"))
+  # summaries
+  med_pred <- calc(preds,median,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_med.tif"))
+  max_pred <- calc(preds,max,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_max.tif"))
+  min_pred <- calc(preds,min,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_min.tif"))
+  sd_pred <- calc(preds,sd,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_sd.tif"))
+  mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean.tif"))
   

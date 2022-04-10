@@ -19,8 +19,11 @@
     fulldf$date <- ymd(fulldf$date)
     
     # scaled summer data
-    scaledat <- read.csv(paste0(intermediate_path,"scaled_summer_vmc_drivers_2.csv"))
+    scaledat <- read.csv(paste0(intermediate_path,"scaled_summer_vmc_drivers_mod2.csv"))
     scaledat$SiteID <- as.factor(scaledat$SiteID)
+    
+    # scaling values
+    scalevals <- read.csv(paste0(intermediate_path,"scaling_values_summer_mod2.csv"))
     
     # data from deep sensors that worked summer 2020-summer 2021
     deep_all <- read.csv(paste0(intermediate_path,"deep_timeseries.csv"))
@@ -28,7 +31,7 @@
     deep_all$SiteID <- factor(deep_all$SiteID)
     
     # scaled model of topo, met and veg drivers on summer moisture
-    load(paste0(model_out_path,"summer_drivers_lmer_2.RData"))
+    load(paste0(model_out_path,"summer_drivers_lmer_mod2.RData"))
     
     # model of drivers of annual medians
     load(paste0(model_out_path,"med_slope_elev.RData"))
@@ -38,8 +41,8 @@
     
 #### prep data
     # calculate annual medians
-    topo_vars <- c("elev","log_tci","slope","tpi","maxEVI")
-    daily_vars <- c("prec","vpd","meant")
+    topo_vars <- c("elev","log_tci","slope","tpi")
+    daily_vars <- c("rad","prec","meant")
     
     ## annual medians
     deep_ann <- aggregate(as.formula(paste0("vmc ~ SiteID +", paste(topo_vars,collapse=" + "))),
@@ -51,12 +54,16 @@
     
 #### figure of effect of drivers on summer moisture ####
     vars <- c("elev","log_tci","slope","tpi","prec","rad","meant")
-    labels <- c("elevation","log(TCI)","slope","TPI","precipitation","radiation","below-canopy temperature")
+    labels <- c("elevation (masl)","log(TCI)","slope (degrees)","TPI","precipitation (mm)","radiation (W/m2)","below-canopy temperature (degrees)")
     
     plots <- list()
     
     for(i in 1:length(vars)){
       var <- vars[i]
+      
+      plotdat <- scaledat
+      plotdat$xval <- (plotdat[,var] * scalevals$sds[scalevals$var==var]) + scalevals$means[scalevals$var==var]
+      plotdat$elev <- (plotdat[,"elev"] * scalevals$sds[scalevals$var=="elev"]) + scalevals$means[scalevals$var=="elev"]
       
       fig.df <- data.frame(elev=rep(0,41))
       fig.df$slope <- 0
@@ -69,16 +76,20 @@
       fig.df[,var] <- seq(min(scaledat[,var],na.rm=T),max(scaledat[,var],na.rm=T),length.out=41)
       
       fig.df$vmc <- ilogit(predict(fullmod,fig.df,re.form=NA))
+      fig.df$xval <- (fig.df[,var] * scalevals$sds[scalevals$var==var]) + scalevals$means[scalevals$var==var]
       
-      plots[[i]] <- ggplot(fig.df, aes_string(x=var,y="vmc")) +
-        geom_point(data=scaledat,aes(color=SiteID),alpha=0.1) +
+      
+      
+      plots[[i]] <- ggplot(fig.df, aes(x=xval,y=vmc)) +
+        geom_point(data=plotdat,aes(color=SiteID),alpha=0.1) +
         geom_line() +
         theme_bw() + 
-        theme(legend.position="none",
-              text=element_text(size=14)) +
-        labs(x=labels[i])
+        theme(legend.position="bottom",
+              text=element_text(size=10)) +
+        labs(x=labels[i],color="elevation (masl)") +
+        guides(color=guide_colorbar(title.position="top"))
       
-      if(!i %in% c(1,4,7)){
+      if(!i %in% c(1,3,5,7)){
         plots[[i]] <- plots[[i]] +
           theme(axis.title.y=element_blank(),
                 axis.text.y=element_blank(),
@@ -86,8 +97,11 @@
       }
     }  
     
-    wrap_plots(plots)
+    wrap_plots(plots,guides="collect") + guide_area() + plot_layout(ncol=2)
     
+    ggsave(paste0(fig_path,"fig6_revised_elev.png"))
+    
+
 #### comparison of deep and surface moisture across sites ####
     ggplot(fulldf, aes(x=logit(vmc_Deep),y=logit(vmc_Surf),color=SiteID)) +
       geom_point(alpha=0.05) +
