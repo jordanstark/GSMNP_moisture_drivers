@@ -81,7 +81,7 @@
       
       
       plots[[i]] <- ggplot(fig.df, aes(x=xval,y=vmc)) +
-        geom_point(data=plotdat,aes(color=SiteID),alpha=0.1) +
+        geom_point(data=plotdat,aes(color=elev),alpha=0.1) +
         geom_line() +
         theme_bw() + 
         theme(legend.position="bottom",
@@ -99,7 +99,7 @@
     
     wrap_plots(plots,guides="collect") + guide_area() + plot_layout(ncol=2)
     
-    ggsave(paste0(fig_path,"fig6_revised_elev.png"))
+    ggsave(paste0(fig_path,"fig6_revised_elev.png"),width=4,height=6)
     
 
 #### comparison of deep and surface moisture across sites ####

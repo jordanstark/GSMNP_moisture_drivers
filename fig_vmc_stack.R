@@ -17,19 +17,25 @@
     medr <- raster(paste0(pred_path,"deep_vmc_summer_med.tif"))
     maxr <- raster(paste0(pred_path,"deep_vmc_summer_max.tif"))
     minr <- raster(paste0(pred_path,"deep_vmc_summer_min.tif"))
+    q025r <- raster(paste0(pred_path,"deep_vmc_summer_q025.tif"))
+    q975r <- raster(paste0(pred_path,"deep_vmc_summer_q975.tif"))
+    sdr <- raster(paste0(pred_path,"deep_vmc_summer_sd.tif"))
+    meanr <- raster(paste0(pred_path,"deep_vmc_summer_mean.tif"))
     
     rng <- maxr - minr
+    rng95 <- q975r - q025r
+    cv <- sdr/meanr
     
     # park boundary
     # parkbound <- readOGR(paste0(gis_path,"GRSM_data/GRSM_BOUNDARY_POLYGON/GRSM_BOUNDARY_POLYGON.shp"))
     # parkbound <- spTransform(parkbound,crs(medval))
     
     
-    summary_stack <- stack(medr,maxr,minr)
-    names(summary_stack) <- c("median","maximum","minimum")
+    summary_stack <- stack(medr,maxr,minr,q025r,q975r,sdr,meanr,rng,rng95,cv)
+    names(summary_stack) <- c("median","maximum","minimum","quantile_025","quantile_975","SD","mean","range","range_95","CV")
 
 #### plot results ####
-pix <- 1e7 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
+pix <- 1e3 # max number of pixels to plot for each map, set to 1e7 or 1e8 for final figs or lower to test formatting
 
     
 scalebar_data <- data.frame(x=230000,xend=240000,y=3955000)
@@ -125,9 +131,10 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F){
 }
 
 medplot <- PlotSingle(medr,title="median",scalebar=T)
-rngplot <- PlotSingle(rng,title="range",pal="PiYG",dir=1,logittrans=T)
+rngplot <- PlotSingle(rng95,title="range of middle 95%",pal="PiYG",dir=1,logittrans=T)
+cvplot <- PlotSingle(cv,title="coefficient of variation",pal="BrBG",dir=-1,logittrans=T)
 
-#medplot/rngplot
+#medplot/rngplot/cvplot
 
 
-ggsave(plot=(medplot/rngplot),filename=paste0(fig_path,"summer_vmc_summary2.tiff"))
+ggsave(plot=(medplot/rngplot/cvplot),filename=paste0(fig_path,"summer_vmc_summary_fig.tiff"),width=6,height=9)
