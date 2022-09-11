@@ -119,10 +119,12 @@
             legend.key.width=unit(0.01,"npc"),
             text=element_text(size=10)) +
       labs(x="",y="",title="Mean Annual Evapotranspiration (2010-2020)") +
-      coord_fixed(expand=F) +
+      coord_fixed(expand=c(0.001)) +
       scale_fill_distiller(name="ET",
-                           palette="PiYG",
-                           direction=1,
+                           palette="RdYlBu",
+                           direction=-1,
                            na.value="white") 
-ggsave(paste0(fig_path,"mean_ET.tiff"),width=7,height=7)    
+    
+    
+ggsave(paste0(fig_path,"mean_ET.tiff"),width=7,height=7,dpi=600)    
    
