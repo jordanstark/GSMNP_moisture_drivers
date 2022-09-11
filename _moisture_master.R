@@ -67,10 +67,8 @@
     # metadata (location history) in sensormetadata_path
     # calibration parameters in sensormetadata_path
     # records of sensor failures in sensormetadata_path
-  # precipitation and VPD data from PRISM
-    # daily max VPD in gis_path/PRISM/MAX_VPD/[year]/
+  # precipitation from PRISM
       # 2021 is split - 2021s is stable data and 2021p is provisional (more recent)
-    # 4km DEM matching PRISM data in gis_path/PRISM/Elev/
   # microclimate conditions
     # weather station data following stations used in Lesser & Fridley 2015
       # in weather_path
