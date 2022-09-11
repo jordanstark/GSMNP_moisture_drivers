@@ -108,7 +108,7 @@
     meanET_park <- crop(meanET,parkbound_tr)
     names(meanET_park) <- "ET"
     
-    meanET_tr <- projectRaster(meanET_park,template)
+    meanET_tr <- projectRaster(meanET_park,template,method="ngb")
     meanET_tr <- mask(meanET_tr,spTransform(parkbound,crs(template)))
     
     
@@ -126,5 +126,5 @@
                            na.value="white") 
     
     
-ggsave(paste0(fig_path,"mean_ET.tiff"),width=7,height=7,dpi=600)    
+ggsave(paste0(fig_path,"mean_ET.tiff"),width=7,height=7)    
    
