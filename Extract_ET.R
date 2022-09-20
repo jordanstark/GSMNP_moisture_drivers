@@ -8,6 +8,8 @@
     library(tidyr)
     library(lubridate)
     library(sp)
+    library(rasterVis)
+    library(ggplot2)
 
     
     
@@ -77,8 +79,6 @@
                                         values_to=shortname))
       
       longdf$year <- as.numeric(longdf$year)
-      longdf[,shortname] <- yday(as_date(longdf[,shortname],
-                                         origin=ymd("1970-01-01")))
       
       return(longdf)
     }
@@ -112,7 +112,7 @@
     meanET_tr <- mask(meanET_tr,spTransform(parkbound,crs(template)))
     
     
-    gplot(meanET_tr,maxpixels=1e8) +
+    p <- gplot(meanET_tr,maxpixels=1e8) +
       geom_tile(aes(fill=value)) +
       theme_void() +
       theme(legend.key.height=unit(0.02,"npc"),
@@ -126,5 +126,5 @@
                            na.value="white") 
     
     
-ggsave(paste0(fig_path,"mean_ET.tiff"),width=7,height=7)    
+ggsave(paste0(fig_path,"mean_ET.tiff"),plot=p,width=7,height=7)    
    
