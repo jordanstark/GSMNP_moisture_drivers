@@ -1,6 +1,7 @@
 #### Master script for analysis and prediction of moisture availability in GRSM ####
 ## Jordan Stark
 ## Summer/Fall 2021
+# some scripts updated Fall 2022 for new manuscript submission
 
 ###########################################################
 ############## setup and directory structure ##############
@@ -47,6 +48,8 @@
     # stringr (text parsing)
     # tidyr (conversion between long and wide format data)
     # parallel (parallel processing)
+    # wql (interpolation)
+    # RcppRoll (rolling mean)
   # GIS data processing
     # raster (raster processing)
     # rgdal (spatial formats and transformations)
