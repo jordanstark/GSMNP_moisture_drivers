@@ -46,7 +46,7 @@ for(i in 14:nlayers(prec_2020)){
     prec_2020[[i-12]] * k^(-13) +
     prec_2020[[i-13]] * k^(-14)
  
- writeRaster(out,paste0(gis_path,"/API/API_",dates_2020[i]))
+ writeRaster(out,paste0(gis_path,"/API/API_",dates_2020[i],".tiff"))
     
 }
 
@@ -68,6 +68,6 @@ for(i in 14:nlayers(prec_2021)){
     prec_2021[[i-12]] * k^(-13) +
     prec_2021[[i-13]] * k^(-14)
   
-  writeRaster(out,paste0(gis_path,"API/API_",dates_2021[i]))
+  writeRaster(out,paste0(gis_path,"API/API_",dates_2021[i],".tiff"))
   
 }
