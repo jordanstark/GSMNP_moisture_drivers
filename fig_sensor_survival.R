@@ -40,6 +40,9 @@ plotdat <- pivot_longer(plotdat,
                         names_sep="_",
                         values_to="n")
 
+export_dat <- plotdat[which(plotdat$summary=="All Sensors"),]
+write.csv(export_dat,paste0(intermediate_path,"sensor_survival_data.csv"))
+
 
 # figure of number of functioning sensors over time
 ggplot(plotdat[which(plotdat$summary=="All Sensors"),], aes(x=date,y=n,color=type)) + #linetype=summary,
