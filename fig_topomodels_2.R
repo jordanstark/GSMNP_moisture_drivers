@@ -149,23 +149,32 @@
     plot_summarydat <- deep_ann
     plot_summarydat$slope.cat <- round(plot_summarydat$slope,digits=-1)
     
-    ggplot(test.df, aes(x=elev,y=pred,color=factor(slope))) +
+    ggplot(test.df, aes(x=elev,y=pred,color=factor(slope),fill=factor(slope))) +
       geom_line() +
-      geom_point(data=plot_summarydat,aes(x=elev,y=vmc,color=factor(slope.cat)),size=2) +
-      scale_color_viridis_d("slope",option="plasma") +
-      theme_classic() +
-      labs(x="elevation (m a.s.l.)",y="median vmc (v/v)")
-    
-    
-    ggplot(test.df, aes(x=elev,y=pred,color=factor(slope))) +
-      geom_line(size=2) +
       geom_point(data=plot_summarydat,
-                 aes(x=elev,y=vmc,color=factor(slope.cat)),
-                 size=3,alpha=0.8) +
-      scale_color_viridis_d("slope",option="plasma") +
+                 aes(x=elev,y=vmc,fill=factor(slope.cat)),
+                 size=2,shape=21,color="black") +
+      scale_color_brewer(palette="Spectral") +
+      scale_fill_brewer(palette="Spectral") +
       theme_classic() +
-      labs(x="elevation (m a.s.l.)",y="median vmc (v/v)") +
-      theme(text=element_text(size=20))
+      labs(x="Elevation (m a.s.l.)",y="Median VMC (v/v)",
+           fill="Slope",color="Slope") +
+      theme(text=element_text(size=12),
+            axis.text=element_text(size=12,color="black"))
+    ggsave(paste0(fig_path,"Figure_4_Updated.png"),
+           width=6,height=4)
+    
+    
+    # ggplot(test.df, aes(x=elev,y=pred,color=factor(slope),fill=factor(slope))) +
+    #   geom_line(size=2) +
+    #   geom_point(data=plot_summarydat,
+    #              aes(x=elev,y=vmc,fill=factor(slope.cat)),
+    #              size=3,alpha=0.8,color="black") +
+    #   scale_color_brewer(palette="Spectral") +
+    #   scale_fill_brewer(palette="Spectral") +
+    #   theme_classic() +
+    #   labs(x="elevation (m a.s.l.)",y="median vmc (v/v)") +
+    #   theme(text=element_text(size=20))
     
 #### seasonal effects of slope and elevation ####
     moddat <- deep_all
@@ -201,21 +210,26 @@
     
     ggplot(test.df3, aes(x=doy,y=vmc,color=slope)) +
       geom_line(data=plotdat[which(!is.na(plotdat$elev)),],
-                aes(group=interaction(SiteID,year(date))),alpha=0.5) +
+                aes(group=interaction(SiteID,year(date))),alpha=0.6,size=0.3) +
       geom_line(size=2) +
-      scale_color_viridis_d("slope",option="plasma") +
+      scale_color_brewer(palette="Spectral") +
       theme_classic() +
       facet_wrap(~elev,nrow=1) +
-      labs(x="day of year",y="vmc")
+      labs(x="Day of Year",y="VMC (v/v)",color="Slope") +
+      theme(text=element_text(size=12),
+            axis.text=element_text(size=12,color="black"),
+            strip.text=element_text(size=12,color="black"))
+    ggsave(paste0(fig_path,"Figure_5_Updated.png"),
+           width=6,height=4)
     
-    ggplot(test.df3, aes(x=doy,y=vmc,color=slope)) +
-      geom_line(data=plotdat[which(!is.na(plotdat$elev)),],
-                aes(group=interaction(SiteID,year(date))),alpha=0.5) +
-      geom_line(size=2) +
-      scale_color_viridis_d("slope",option="plasma") +
-      theme_classic() +
-      facet_wrap(~elev,nrow=1) +
-      labs(x="day of year",y="vmc") +
-      theme(text=element_text(size=24))
+    # ggplot(test.df3, aes(x=doy,y=vmc,color=slope)) +
+    #   geom_line(data=plotdat[which(!is.na(plotdat$elev)),],
+    #             aes(group=interaction(SiteID,year(date))),alpha=0.5) +
+    #   geom_line(size=2) +
+    #   scale_color_brewer(palette="Spectral") +
+    #   theme_classic() +
+    #   facet_wrap(~elev,nrow=1) +
+    #   labs(x="Day of Year",y="VMC (v/v)",color="Slope") +
+    #   theme(text=element_text(size=24))
     
     
