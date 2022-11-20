@@ -15,7 +15,7 @@
   ## data import
     # model 
       load(paste0(model_out_path,"predmod6.RData"))
-      coefs <- data.frame(summary(fullmod)$coefficients[,"Estimate"])
+      coefs <- data.frame(summary(predmod6)$coefficients[,"Estimate"])
       names(coefs) <- "Estimate"
         
 
@@ -42,35 +42,37 @@
       tpi <- terrain(elev,opt="tpi")
 
       
-      prec_files <- c(list.files(paste0(gis_path,"PRISM/Precip/2019/"),
-                                 pattern="*.bil$",full.names=T),
-                      list.files(paste0(gis_path,"PRISM/Precip/2020/"),
-                                 pattern="*.bil$",full.names=T),
-                      list.files(paste0(gis_path,"PRISM/Precip/2021s/"),
-                                 pattern="*.bil$",full.names=T),
-                      list.files(paste0(gis_path,"PRISM/Precip/2021p/"),
-                                 pattern="*.bil$",full.names=T))
-      prec_dates <- ymd(simplify2array(strsplit(prec_files,"_"))[6,])
-      
-      prec <- stack(prec_files[which(prec_dates %in% dates)])
-      names(prec) <- names(dates)
+      # prec_files <- c(list.files(paste0(gis_path,"PRISM/Precip/2019/"),
+      #                            pattern="*.bil$",full.names=T),
+      #                 list.files(paste0(gis_path,"PRISM/Precip/2020/"),
+      #                            pattern="*.bil$",full.names=T),
+      #                 list.files(paste0(gis_path,"PRISM/Precip/2021s/"),
+      #                            pattern="*.bil$",full.names=T),
+      #                 list.files(paste0(gis_path,"PRISM/Precip/2021p/"),
+      #                            pattern="*.bil$",full.names=T))
+      # prec_dates <- ymd(simplify2array(strsplit(prec_files,"_"))[6,])
+      # 
+      # prec <- stack(prec_files[which(prec_dates %in% dates)])
+      # names(prec) <- names(dates)
 
       
       ## import API files
-      api_files <- list.files(paste0(gis_path,"API/"))
-      api_dates <- ymd(simplify2array(strsplit(api_files,"_")[3,]))
+      api_files <- list.files(paste0(gis_path,"API/"),full.names=T)
+      api_dates <- ymd(simplify2array(strsplit(api_files,"_"))[3,])
       
       API <- stack(api_files[which(api_dates %in% dates)])
       
       
       # transform precip and API rasters to crs of other rasters
-      prec_tr <- projectRaster(prec,elev,method="ngb",
-                               filename=paste0(intermediate_path,"prec_tmp"),
-                               overwrite=T)
-      
-      API_tr <- projectRaster(API,elev,method="ngb",
-                              filenames=paste0(intermediate_path,"api_tmp"),
-                              overwrite=T)
+        # commented out because this takes a long time
+        # code below will pull the cached versions created by this code
+      # prec_tr <- projectRaster(prec,elev,method="ngb",
+      #                          filename=paste0(intermediate_path,"prec_tmp"),
+      #                          overwrite=T)
+      # 
+      # API_tr <- projectRaster(API,elev,method="ngb",
+      #                         filename=paste0(intermediate_path,"api_tmp"),
+      #                         overwrite=T)
       
       prec_tr <- stack(paste0(intermediate_path,"prec_tmp.gri"))
       API_tr <- stack(paste0(intermediate_path,"api_tmp.gri"))
@@ -179,11 +181,11 @@
       prec_sc <- ScaleVar(prec_tr,"prec",scales)
       rad_sc <- ScaleVar(rad,"rad",scales)
       meant_sc <- ScaleVar(meant,"meant",scales)
-      api_sc <- ScaleVar(api_tr,"APIdeep",scales)
+      api_sc <- ScaleVar(API_tr,"APIdeep",scales)
     
         
     # save space by removing unscaled rasters
-      rm(elev,slope,tpi,prec,prec_tr,api,api_tr,rad,meant)
+      rm(elev,slope,tpi,prec,prec_tr,API,API_tr,rad,meant)
       
 #### apply model to rasters ####
   # values that do not change seasonally
@@ -207,9 +209,9 @@
      coefs["meant:elev",] * meant_sc[[i]] * elev_sc +
      coefs["meant:slope",] * meant_sc[[i]] * slope_sc +
      coefs["meant:tpi",] * meant_sc[[i]] * tpi_sc +
-     coefs["APIdeep:elev",] * APIdeep_sc[[i]] * elev_sc +
-     coefs["APIdeep:slope",] * APIdeep_sc[[i]] * slope_sc +
-     coefs["APIdeep:tpi",] * APIdeep_sc[[i]] * tpi_sc +
+     coefs["APIdeep:elev",] * api_sc[[i]] * elev_sc +
+     coefs["APIdeep:slope",] * api_sc[[i]] * slope_sc +
+     coefs["APIdeep:tpi",] * api_sc[[i]] * tpi_sc 
      
    
    
