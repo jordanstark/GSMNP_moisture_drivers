@@ -200,18 +200,18 @@
      coefs["rad",] * rad_sc[[i]] +
      coefs["meant",] * meant_sc[[i]] +
      coefs["APIdeep",] * api_sc[[i]] +
-     coefs["prec:elev",] * prec_sc[[i]] * elev_sc +
-     coefs["prec:slope",] * prec_sc[[i]] * slope_sc +
-     coefs["prec:tpi",] * prec_sc[[i]] * tpi_sc +
-     coefs["rad:elev",] * rad_sc[[i]] * elev_sc +
-     coefs["rad:slope",] * rad_sc[[i]] * slope_sc +
-     coefs["rad:tpi",] * rad_sc[[i]] * tpi_sc +
-     coefs["meant:elev",] * meant_sc[[i]] * elev_sc +
-     coefs["meant:slope",] * meant_sc[[i]] * slope_sc +
-     coefs["meant:tpi",] * meant_sc[[i]] * tpi_sc +
-     coefs["APIdeep:elev",] * api_sc[[i]] * elev_sc +
-     coefs["APIdeep:slope",] * api_sc[[i]] * slope_sc +
-     coefs["APIdeep:tpi",] * api_sc[[i]] * tpi_sc 
+     coefs["elev:prec",] * elev_sc * prec_sc[[i]] +
+     coefs["elev:rad",] * elev_sc * rad_sc[[i]] +
+     coefs["elev:meant",] * elev_sc * meant_sc[[i]] +
+     coefs["elev:APIdeep",] * elev_sc * api_sc[[i]] +
+     coefs["slope:prec",] * slope_sc * prec_sc[[i]] +
+     coefs["slope:rad",] * slope_sc * rad_sc[[i]] +
+     coefs["slope:meant",] * slope_sc * meant_sc[[i]] +
+     coefs["slope:APIdeep",] * slope_sc * api_sc[[i]] +
+     coefs["tpi:prec",] * tpi_sc * prec_sc[[i]] +
+     coefs["tpi:rad",] * tpi_sc * rad_sc[[i]] +
+     coefs["tpi:meant",] * tpi_sc * meant_sc[[i]] +
+     coefs["tpi:APIdeep",] * tpi_sc * api_sc[[i]] 
      
    
    
@@ -241,4 +241,5 @@
   mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean.tif"))
   q025_pred <- calc(preds,q025,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q025.tif"),overwrite=T)
   q975_pred <- calc(preds,q975,probs=0.975,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q975.tif"),overwrite=T)
+  
   
