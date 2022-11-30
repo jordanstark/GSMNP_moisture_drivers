@@ -62,13 +62,13 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne
       theme_void() +
       theme(legend.key.height=unit(0.02,"npc"),
             legend.key.width=unit(0.01,"npc"),
-            text=element_text(size=10)) +
+            text=element_text(size=14)) +
       labs(x="",y="",title=title) +
       coord_fixed(expand=F) 
     
   if(logittrans){
     plot <- plot +
-      scale_fill_distiller(name="",
+      scale_fill_distiller(name="VMC (%)",
                            palette=pal,
                            direction=-dir,
                            na.value="white",
@@ -77,7 +77,7 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne
                            limits=c(minval,maxval))
   } else {
     plot <- plot +
-      scale_fill_distiller(name="",
+      scale_fill_distiller(name="VMC (%)",
                            palette=pal,
                            direction=-dir,
                            na.value="white",
@@ -92,14 +92,14 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne
         geom_segment(data=scalebar_data,aes(x=x,xend=xend,y=y,yend=y),
                      arrow=arrow(angle=90,ends="both",length=unit(0.02,"npc")))+
         geom_text(aes(x=mean(c(scalebar_data$x,scalebar_data$xend)),
-                      y=scalebar_data$y+3000,label="10 km"),size=3) 
+                      y=scalebar_data$y+3000,label="10 km"),size=5) 
     } else if(ne){
       
      plot <- plot +
       geom_segment(data=scalebar_data_zoom,aes(x=x,xend=xend,y=y,yend=y),
                    arrow=arrow(angle=90,ends="both",length=unit(0.02,"npc")))+
       geom_text(aes(x=mean(c(scalebar_data_zoom$x,scalebar_data_zoom$xend)),
-                    y=scalebar_data_zoom$y+1000,label="1 km"),size=3) 
+                    y=scalebar_data_zoom$y+1000,label="1 km"),size=5) 
     }
 
   }

@@ -234,11 +234,11 @@
   q025 <- function(x,na.rm=T) quantile(x,probs=0.025,na.rm=T) 
   q975 <- function(x,na.rm=T) quantile(x,probs=0.975,na.rm=T)
   
-  med_pred <- calc(preds,median,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_med.tif"))
-  max_pred <- calc(preds,max,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_max.tif"))
-  min_pred <- calc(preds,min,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_min.tif"))
-  sd_pred <- calc(preds,sd,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_sd.tif"))
-  mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean.tif"))
+  med_pred <- calc(preds,median,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_med.tif"),overwrite=T)
+  max_pred <- calc(preds,max,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_max.tif"),overwrite=T)
+  min_pred <- calc(preds,min,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_min.tif"),overwrite=T)
+  sd_pred <- calc(preds,sd,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_sd.tif"),overwrite=T)
+  mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean.tif"),overwrite=T)
   q025_pred <- calc(preds,q025,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q025.tif"),overwrite=T)
   q975_pred <- calc(preds,q975,probs=0.975,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q975.tif"),overwrite=T)
   
