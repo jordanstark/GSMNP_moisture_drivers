@@ -49,7 +49,8 @@ ne.med <- crop(medr,ne.ext)
 ne.rng95 <- crop(medr,ne.ext)
 ne.cv <- crop(cv,ne.ext)
 
-PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne=F,legend=F){
+PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,
+                       dir=-1,scalebar=F,ne=F,legend=F,namelab=""){
   minval <- cellStats(r,min)
   maxval <- cellStats(r,max)
   
@@ -68,16 +69,16 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne
     
   if(logittrans){
     plot <- plot +
-      scale_fill_distiller(name="VMC (%)",
+      scale_fill_distiller(name=namelab,
                            palette=pal,
                            direction=-dir,
                            na.value="white",
                            trans="logit",
-                           breaks=c(0.05,0.25,0.45,0.65),
+                           breaks=c(0.01,0.05,0.1,0.25,0.35,0.45,0.65),
                            limits=c(minval,maxval))
   } else {
     plot <- plot +
-      scale_fill_distiller(name="VMC (%)",
+      scale_fill_distiller(name=namelab,
                            palette=pal,
                            direction=-dir,
                            na.value="white",
@@ -114,11 +115,11 @@ PlotSingle <- function(r,title="",pal="RdYlBu",logittrans=T,dir=-1,scalebar=F,ne
 }
 
 medplot <- PlotSingle(medr,title="median",scalebar=T)
-medplot_ne <- PlotSingle(ne.med,ne=T,scalebar=T,legend=T)
+medplot_ne <- PlotSingle(ne.med,ne=T,scalebar=T,legend=T,namelab="VMC\n(vol/vol)")
 rngplot <- PlotSingle(rng95,title="range of middle 95%",pal="PiYG",dir=1)
-rngplot_ne <- PlotSingle(rng95,pal="PiYG",dir=1,ne=T,legend=T)
+rngplot_ne <- PlotSingle(rng95,pal="PiYG",dir=1,ne=T,legend=T,namelab="VMC\n(vol/vol)")
 cvplot <- PlotSingle(cv,title="coefficient of variation",pal="BrBG",dir=-1)
-cvplot_ne <- PlotSingle(cv,pal="BrBG",dir=-1,ne=T,legend=T)
+cvplot_ne <- PlotSingle(cv,pal="BrBG",dir=-1,ne=T,legend=T,namelab="CV\n(unitless)")
 
 full_plot <- (medplot|medplot_ne)/(rngplot|rngplot_ne)/(cvplot|cvplot_ne)
 
