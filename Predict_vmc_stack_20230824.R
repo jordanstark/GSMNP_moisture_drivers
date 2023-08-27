@@ -1,6 +1,8 @@
 ## apply summer lmer model to make predictive raster stack
 ## Jordan Stark, Mar 2022. Updated Nov 2022 based on model 6 from Model_topotrends_3_CUoffice.R
 
+## updated to use new rad data in Aug 2023
+
 #### setup ####
   ## packages
     library(raster)
@@ -22,17 +24,17 @@
     # scaling
       scales <- read.csv(paste0(intermediate_path,"scaling_values_predmod_Nov2022.csv"))
       
-    # dates to predict
-      dates <- c(seq(ymd("2020-05-01"),ymd("2020-09-01"),by="1 day"),
+    # dates to predict                  #switched to 8/31 because that is the last available rad date
+      dates <- c(seq(ymd("2020-05-01"),ymd("2020-08-31"),by="1 day"),
                  seq(ymd("2021-05-01"),ymd("2021-07-10"),by="1 day")) # last day of microclim pred
       doys <- yday(dates)
       
 
     # rasters
-      elev <- raster(paste0(gis_path,"gsmnp_ascii/elev.txt"))
-      rad <- stack(list.files(paste0(gis_path,"gsmnp_ascii/rad/"),
+      elev <- raster(paste0(gis_path,"gsmnp_ascii_20230824/NED30.txt"))
+      rad <- stack(list.files(paste0(gis_path,"gsmnp_ascii_20230824/rad/"),
                               full.names=T),quick=T)
-      names(rad)[names(rad)=="rad073x2"] <- "rad074"
+      #names(rad)[names(rad)=="rad073x2"] <- "rad074"
       
       crs(rad) <- crs(elev) <- CRS("+proj=utm +zone=17 +datum=NAD27")
       
@@ -86,6 +88,11 @@
       meant <- stack(meant_files[which(meant_dates %in% dates)])
       names(meant) <- names(dates)
       
+      
+      ## crop rad and elev to match meant
+      rad <- crop(rad,meant[[1]])
+      elev <- crop(elev,meant[[1]])
+      
     # EVI rasters for masking
       maturity <- stack(list.files(paste0(gis_path,"Seasonality/"),
                                    pattern="Maturity_0",
@@ -112,7 +119,7 @@
         
         qamask[qamask %in% badvals ] <- -1
         
-        if(!identical(extent(stack),extent(qamask))) stack <- crop(stack,qamask,)
+        if(!identical(extent(stack),extent(qamask))) stack <- crop(stack,qamask)
         if(!identical(extent(stack),extent(qamask))) qamask <- crop(qamask,stack)
         
         clean <- mask(stack,qamask,maskvalue=-1)
@@ -220,26 +227,26 @@
    # mask based on leafout
    pred <- mask(pred,seasmask[[i]])
    
-   writeRaster(pred,paste0(pred_path,"/deep_vmc_summer/pred_",dates[i],".tif"))
+   writeRaster(pred,paste0(pred_path,"/deep_vmc_summer_20230824/pred_",dates[i],".tif"))
    
  }
       
     
   # final prediction 
       
-  preds <- stack(list.files(paste0(pred_path,"/deep_vmc_summer/"),full.names=T))
+  preds <- stack(list.files(paste0(pred_path,"/deep_vmc_summer_20230824/"),full.names=T))
    
   
   # summaries
   q025 <- function(x,na.rm=T) quantile(x,probs=0.025,na.rm=T) 
   q975 <- function(x,na.rm=T) quantile(x,probs=0.975,na.rm=T)
   
-  med_pred <- calc(preds,median,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_med.tif"),overwrite=T)
-  max_pred <- calc(preds,max,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_max.tif"),overwrite=T)
-  min_pred <- calc(preds,min,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_min.tif"),overwrite=T)
-  sd_pred <- calc(preds,sd,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_sd.tif"),overwrite=T)
-  mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean.tif"),overwrite=T)
-  q025_pred <- calc(preds,q025,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q025.tif"),overwrite=T)
-  q975_pred <- calc(preds,q975,probs=0.975,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q975.tif"),overwrite=T)
+  med_pred <- calc(preds,median,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_med_20230824.tif"),overwrite=T)
+  max_pred <- calc(preds,max,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_max_20230824.tif"),overwrite=T)
+  min_pred <- calc(preds,min,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_min_20230824.tif"),overwrite=T)
+  sd_pred <- calc(preds,sd,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_sd_20230824.tif"),overwrite=T)
+  mean_pred <- calc(preds,mean,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_mean_20230824.tif"),overwrite=T)
+  q025_pred <- calc(preds,q025,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q025_20230824.tif"),overwrite=T)
+  q975_pred <- calc(preds,q975,probs=0.975,na.rm=T,filename=paste0(pred_path,"deep_vmc_summer_q975_20230824.tif"),overwrite=T)
   
   
